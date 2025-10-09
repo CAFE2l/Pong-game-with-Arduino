@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pong com Arduino v2</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background-color: #0d0d0d;
+            color: #fff;
+            font-family: 'Press Start 2P', cursive;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .main-content {
+            display: flex;
+            align-items: flex-start;
+            gap: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        #gameCanvas {
+            background-color: #000;
+            border: 4px solid #00ffff;
+            box-shadow: 0 0 15px #00ffff;
+        }
+        
+        .panel {
+            background-color: #1a1a1a;
+            border: 2px solid #00ffff;
+            padding: 15px;
+            width: 280px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .panel-section {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .panel h2 {
+            color: #00ffff;
+            font-size: 14px;
+            text-shadow: 0 0 5px #00ffff;
+            margin-bottom: 5px;
+        }
+        
+        .status-box {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            transition: background-color 0.3s;
+        }
+
+        .status-connected { background-color: #00ff00; box-shadow: 0 0 10px #00ff00; }
+        .status-disconnected { background-color: #ff0000; box-shadow: 0 0 10px #ff0000; }
+        .status-calibrating { background-color: #ffff00; box-shadow: 0 0 10px #ffff00; }
+
+        button {
+            font-family: 'Press Start 2P', cursive;
+            color: #000;
+            border: none;
+            padding: 10px;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            filter: brightness(1.2);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        #connectBtn { background-color: #00ffff; }
+        #startBtn { background-color: #00ff00; }
+        #pauseBtn { background-color: #ffff00; }
+        #resetBtn { background-color: #ff8c00; }
+
+        .score-board {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            margin-top: 10px;
+        }
+        .score { text-align: center; }
+        .score-label { font-size: 14px; color: #00ffff; }
+        .score-value { font-size: 32px; color: #fff; }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>PONG COM ARDUINO</h1>
+        
+        <div class="main-content">
+            <div class="game-area">
+                <canvas id="gameCanvas" width="1000" height="600"></canvas>
+                 <div class="score-board">
+                    <div class="score">
+                        <div class="score-label">JOGADOR</div>
+                        <div id="playerScore" class="score-value">0</div>
+                    </div>
+                    <div class="score">
+                        <div class="score-label">CPU</div>
+                        <div id="cpuScore" class="score-value">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-section">
+                    <h2>CONEXÃO</h2>
+                    <div class="status-box">
+                        <span id="statusText">Desconectado</span>
+                        <div id="statusIndicator" class="status-indicator status-disconnected"></div>
+                    </div>
+                    <button id="connectBtn">CONECTAR ARDUINO</button>
+                </div>
+
+                <div class="panel-section">
+                    <h2>JOGO</h2>
+                    <button id="startBtn">INICIAR JOGO</button>
+                    <button id="pauseBtn" disabled>PAUSAR</button>
+                    <button id="resetBtn">NOVO JOGO</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class PongGame {
+            constructor(canvasId) {
+                this.canvas = document.getElementById(canvasId);
+                this.ctx = this.canvas.getContext('2d');
+
+                // --- CONSTANTES DO JOGO ---
+                this.PADDLE_WIDTH = 15;
+                this.PADDLE_HEIGHT = 120;
+                this.BALL_RADIUS = 10;
+                this.WINNING_SCORE = 3;
+                this.PADDLE_SMOOTHING = 0.18; // Fator de suavização (menor = mais suave)
+
+                // --- ESTADO DO JOGO ---
+                this.playerY = (this.canvas.height - this.PADDLE_HEIGHT) / 2;
+                this.playerTargetY = this.playerY; // Posição alvo para suavização
+                this.cpuY = (this.canvas.height - this.PADDLE_HEIGHT) / 2;
+                this.playerScore = 0;
+                this.cpuScore = 0;
+                this.gameRunning = false;
+                this.isPaused = false;
+                this.gameOver = false;
+                this.winnerText = '';
+                
+                this.ballX = 0;
+                this.ballY = 0;
+                this.ballSpeedX = 0;
+                this.ballSpeedY = 0;
+
+                // --- CONEXÃO E CALIBRAÇÃO ---
+                this.port = null;
+                this.reader = null;
+                this.isCalibrating = false;
+                this.potMin = 1023;
+                this.potMax = 0;
+
+                // --- ELEMENTOS DA UI ---
+                this.ui = {
+                    connectBtn: document.getElementById('connectBtn'),
+                    startBtn: document.getElementById('startBtn'),
+                    pauseBtn: document.getElementById('pauseBtn'),
+                    resetBtn: document.getElementById('resetBtn'),
+                    statusText: document.getElementById('statusText'),
+                    statusIndicator: document.getElementById('statusIndicator'),
+                    playerScoreDisplay: document.getElementById('playerScore'),
+                    cpuScoreDisplay: document.getElementById('cpuScore'),
+                };
+
+                this.init();
+            }
+
+            init() {
+                this.initEventListeners();
+                this.resetBall(true);
+                this.gameLoop();
+            }
+
+            initEventListeners() {
+                this.ui.connectBtn.addEventListener('click', () => this.toggleArduinoConnection());
+                this.ui.startBtn.addEventListener('click', () => this.startGame());
+                this.ui.pauseBtn.addEventListener('click', () => this.togglePause());
+                this.ui.resetBtn.addEventListener('click', () => this.resetGame());
+            }
+
+            // --- LÓGICA DO JOGO ---
+            startGame() {
+                if (this.gameRunning || this.gameOver) return;
+                this.gameRunning = true;
+                this.isPaused = false;
+                this.ui.pauseBtn.disabled = false;
+                this.ui.pauseBtn.textContent = 'PAUSAR';
+                this.resetBall();
+            }
+            
+            togglePause() {
+                if (!this.gameRunning || this.gameOver) return;
+                this.isPaused = !this.isPaused;
+                this.ui.pauseBtn.textContent = this.isPaused ? 'RETOMAR' : 'PAUSAR';
+            }
+            resetGame() {
+                this.playerScore = 0;
+                this.cpuScore = 0;
+                this.updateScoreDisplay();
+                this.gameRunning = false;
+                this.isPaused = false;
+                this.gameOver = false;
+                this.winnerText = '';
+                this.ui.pauseBtn.disabled = true;
+                this.ui.pauseBtn.textContent = 'PAUSAR';
+                
+                // --- LINHAS NOVAS AQUI ---
+                // Reposiciona as raquetes no centro da tela
+                this.playerY = (this.canvas.height - this.PADDLE_HEIGHT) / 2;
+                this.playerTargetY = this.playerY; // Também reseta o alvo do movimento
+                this.cpuY = (this.canvas.height - this.PADDLE_HEIGHT) / 2;
+                // --- FIM DAS LINHAS NOVAS ---
+
+                this.resetBall(true);
+            }
+            endGame(winner) {
+                this.gameOver = true;
+                this.gameRunning = false;
+                this.winnerText = `${winner} VENCEU!`;
+                this.ui.pauseBtn.disabled = true;
+            }
+
+            resetBall(shouldStop = false) {
+                this.ballX = this.canvas.width / 2;
+                this.ballY = this.canvas.height / 2;
+                if (shouldStop) {
+                    this.ballSpeedX = 0;
+                    this.ballSpeedY = 0;
+                } else {
+                    this.ballSpeedX = (Math.random() > 0.5 ? 1 : -1) * 7;
+                    this.ballSpeedY = (Math.random() > 0.5 ? 1 : -1) * (Math.random() * 3 + 2);
+                }
+            }
+
+            updateScoreDisplay() {
+                this.ui.playerScoreDisplay.textContent = this.playerScore;
+                this.ui.cpuScoreDisplay.textContent = this.cpuScore;
+            }
+
+            // --- CONEXÃO E CALIBRAÇÃO COM ARDUINO ---
+            async toggleArduinoConnection() {
+                if (this.port) await this.disconnectArduino();
+                else await this.connectArduino();
+            }
+
+            async connectArduino() {
+                if (!navigator.serial) {
+                    alert("A Web Serial API não é suportada neste navegador. Use Google Chrome ou Edge.");
+                    return;
+                }
+                try {
+                    this.updateStatus('Conectando...', 'status-calibrating');
+                    this.port = await navigator.serial.requestPort();
+                    await this.port.open({ baudRate: 9600 });
+                    this.startCalibration();
+                    this.startReading();
+                } catch (error) {
+                    this.updateStatus('Erro ao conectar', 'status-disconnected');
+                }
+            }
+
+            async disconnectArduino() {
+                if (this.reader) await this.reader.cancel();
+                if (this.port) await this.port.close();
+                this.port = null;
+                this.reader = null;
+                this.updateStatus('Desconectado', 'status-disconnected');
+                this.ui.connectBtn.textContent = 'CONECTAR ARDUINO';
+            }
+            
+            startCalibration() {
+                this.isCalibrating = true;
+                this.potMin = 1023;
+                this.potMax = 0;
+                this.updateStatus('Calibrando... Gire o botão!', 'status-calibrating');
+
+                // Reposiciona a raquete no centro ao iniciar a calibração
+                this.playerY = (this.canvas.height - this.PADDLE_HEIGHT) / 2;
+                this.playerTargetY = this.playerY;
+
+                setTimeout(() => {
+                    this.isCalibrating = false;
+
+                    // CONDIÇÃO DE SEGURANÇA: Se a faixa de valores for muito pequena, usa o padrão.
+                    if ((this.potMax - this.potMin) < 50) { 
+                        this.potMin = 0;
+                        this.potMax = 1023;
+                        console.log('Calibração falhou ou sem movimento, usando valores padrão (0-1023).');
+                    } else {
+                        console.log(`Calibração finalizada. Mínimo: ${this.potMin}, Máximo: ${this.potMax}`);
+                    }
+
+                    this.updateStatus('Conectado', 'status-connected');
+                    this.ui.connectBtn.textContent = 'DESCONECTAR';
+                }, 5000); // 5 segundos de calibração
+            }
+            async startReading() {
+                const decoder = new TextDecoder();
+                while (this.port?.readable) {
+                    this.reader = this.port.readable.getReader();
+                    try {
+                        while (true) {
+                            const { value, done } = await this.reader.read();
+                            if (done) break;
+                            const text = decoder.decode(value);
+                            this.processArduinoData(text);
+                        }
+                    } catch (error) {
+                        // Ignora erros comuns
+                    } finally {
+                        this.reader.releaseLock();
+                    }
+                }
+            }
+processArduinoData(data) {
+                const lines = data.trim().split('\n');
+                lines.forEach(line => {
+                    if (line.startsWith('P1:')) {
+                        const potValue = parseInt(line.substring(3));
+
+                        // --- NOVA TRAVA DE SEGURANÇA AQUI ---
+                        // Se o valor lido não for um número válido (ex: por ruído na comunicação),
+                        // a função ignora esta leitura e para, esperando a próxima.
+                        if (isNaN(potValue)) {
+                            return; 
+                        }
+                        // --- FIM DA TRAVA DE SEGURANÇA ---
+
+                        if (this.isCalibrating) {
+                            if (potValue < this.potMin) this.potMin = potValue;
+                            if (potValue > this.potMax) this.potMax = potValue;
+                        } else {
+                            const paddleMaxY = this.canvas.height - this.PADDLE_HEIGHT;
+                            this.playerTargetY = this.mapValue(potValue, this.potMin, this.potMax, 0, paddleMaxY);
+                        }
+                    }
+                    if (line === 'BTN:1') {
+                        if (this.gameOver) this.resetGame();
+                        else if (!this.gameRunning) this.startGame();
+                    }
+                });
+            }
+
+            mapValue(value, inMin, inMax, outMin, outMax) {
+    // TRAVA DE SEGURANÇA CONTRA DIVISÃO POR ZERO
+                const divisor = inMax - inMin;
+                if (divisor === 0) {
+                    return outMin; // Retorna um valor seguro se a faixa de entrada for zero
+                }
+
+                const clampedValue = Math.max(inMin, Math.min(value, inMax));
+                return (clampedValue - inMin) * (outMax - outMin) / divisor + outMin;
+            }
+            
+            updateStatus(message, cssClass) {
+                this.ui.statusText.textContent = message;
+                this.ui.statusIndicator.className = `status-indicator ${cssClass}`;
+            }
+
+            // --- LOOP PRINCIPAL DO JOGO ---
+      update() {
+        if (this.isPaused || this.gameOver) return;
+
+        // --- LÓGICA DE MOVIMENTO FINAL DA RAQUETE DO JOGADOR ---
+        const distance = this.playerTargetY - this.playerY;
+
+        // CORREÇÃO: Se a distância for menor que 1 pixel, encaixa na posição final.
+        // Isso remove o efeito "imã" de forma mais agressiva.
+        if (Math.abs(distance) < 1) { 
+            this.playerY = this.playerTargetY;
+        } else {
+            // Senão, continua o movimento suave com a nova agilidade.
+            this.playerY += distance * this.PADDLE_SMOOTHING;
+        }
+
+        if (!this.gameRunning) return;
+
+        // O resto do código continua exatamente igual...
+        // --- MOVIMENTO DA BOLA ---
+        this.ballX += this.ballSpeedX;
+        this.ballY += this.ballSpeedY;
+
+        // --- COLISÃO COM PAREDES (CIMA/BAIXO) ---
+        if (this.ballY - this.BALL_RADIUS < 0) {
+            this.ballY = this.BALL_RADIUS;
+            this.ballSpeedY = -this.ballSpeedY;
+        } else if (this.ballY + this.BALL_RADIUS > this.canvas.height) {
+            this.ballY = this.canvas.height - this.BALL_RADIUS;
+            this.ballSpeedY = -this.ballSpeedY;
+        }
+
+        // --- VERIFICA PONTUAÇÃO ---
+        if (this.ballX - this.BALL_RADIUS < 0) {
+            this.cpuScore++;
+            this.updateScoreDisplay();
+            if (this.cpuScore >= this.WINNING_SCORE) {
+                this.endGame('CPU');
+            } else {
+                this.resetBall();
+            }
+            return;
+        }
+        if (this.ballX + this.BALL_RADIUS > this.canvas.width) {
+            this.playerScore++;
+            this.updateScoreDisplay();
+            if (this.playerScore >= this.WINNING_SCORE) {
+                this.endGame('JOGADOR');
+            } else {
+                this.resetBall();
+            }
+            return;
+        }
+
+        // --- LÓGICA DE COLISÃO COM AS RAQUETES ---
+        if (this.ballX - this.BALL_RADIUS <= this.PADDLE_WIDTH &&
+            this.ballSpeedX < 0 &&
+            this.ballY + this.BALL_RADIUS > this.playerY &&
+            this.ballY - this.BALL_RADIUS < this.playerY + this.PADDLE_HEIGHT) 
+        {
+            this.ballSpeedX = -this.ballSpeedX * 1.03;
+            this.ballX = this.PADDLE_WIDTH + this.BALL_RADIUS;
+        }
+
+        if (this.ballX + this.BALL_RADIUS >= this.canvas.width - this.PADDLE_WIDTH &&
+            this.ballSpeedX > 0 &&
+            this.ballY + this.BALL_RADIUS > this.cpuY &&
+            this.ballY - this.BALL_RADIUS < this.cpuY + this.PADDLE_HEIGHT) 
+        {
+            this.ballSpeedX = -this.ballSpeedX;
+            this.ballX = this.canvas.width - this.PADDLE_WIDTH - this.BALL_RADIUS;
+        }
+
+        // --- IA DA CPU ---
+        const cpuCenter = this.cpuY + this.PADDLE_HEIGHT / 2;
+        const deadZone = 10;
+        const cpuSpeed = 5.5;
+
+        if (cpuCenter < this.ballY - deadZone) {
+            this.cpuY += cpuSpeed;
+        } else if (cpuCenter > this.ballY + deadZone) {
+            this.cpuY -= cpuSpeed;
+        }
+
+        this.cpuY = Math.max(0, Math.min(this.canvas.height - this.PADDLE_HEIGHT, this.cpuY));
+    }
+        draw() {
+            this.ctx.fillStyle = '#000';
+            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+            this.ctx.strokeStyle = '#00ffff';
+            this.ctx.lineWidth = 4;
+            this.ctx.setLineDash([10, 15]);
+            this.ctx.beginPath();
+            this.ctx.moveTo(this.canvas.width / 2, 0);
+            this.ctx.lineTo(this.canvas.width / 2, this.canvas.height);
+            this.ctx.stroke();
+            this.ctx.setLineDash([]);
+
+            this.ctx.fillStyle = '#00ffff';
+            this.ctx.fillRect(0, this.playerY, this.PADDLE_WIDTH, this.PADDLE_HEIGHT);
+            this.ctx.fillStyle = '#ff00ff';
+            this.ctx.fillRect(this.canvas.width - this.PADDLE_WIDTH, this.cpuY, this.PADDLE_WIDTH, this.PADDLE_HEIGHT);
+
+            if (this.gameRunning || this.gameOver) {
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.beginPath();
+                this.ctx.arc(this.ballX, this.ballY, this.BALL_RADIUS, 0, Math.PI * 2);
+                this.ctx.fill();
+            }
+            
+            const centerX = this.canvas.width / 2;
+            const centerY = this.canvas.height / 2;
+            this.ctx.textAlign = 'center';
+
+            if (this.gameOver) {
+                this.ctx.fillStyle = '#00ff00';
+                this.ctx.font = '40px "Press Start 2P"';
+                this.ctx.fillText(this.winnerText, centerX, centerY);
+                this.ctx.font = '20px "Press Start 2P"';
+                this.ctx.fillText('APERTE "NOVO JOGO"', centerX, centerY + 50);
+            } else if (!this.gameRunning) {
+                this.ctx.fillStyle = '#fff';
+                this.ctx.font = '24px "Press Start 2P"';
+                this.ctx.fillText('APERTE INICIAR', centerX, centerY);
+            } else if (this.isPaused) {
+                this.ctx.fillStyle = '#ffff00';
+                this.ctx.font = '40px "Press Start 2P"';
+                this.ctx.fillText('PAUSADO', centerX, centerY);
+            }
+        }
+
+            gameLoop() {
+                this.update();
+                this.draw();
+                requestAnimationFrame(() => this.gameLoop());
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            new PongGame('gameCanvas');
+        });
+    </script>
+</body>
+</html>
