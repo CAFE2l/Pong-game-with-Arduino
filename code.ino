@@ -20,10 +20,10 @@ void setup() {
 Serial.begin(9600);
 pinMode(buttonPin, INPUT_PULLUP);
 // Inicializa o array de leituras com valores neutros
-    int initialReading = analogRead(potPin1);
-    for (int i = 0; i < NUM_READINGS; i++) {
-    readings[i] = initialReading;
-    total += initialReading;
+int initialReading = analogRead(potPin1);
+for (int i = 0; i < NUM_READINGS; i++) {
+readings[i] = initialReading;
+total += initialReading;
 }
 // Envia sinal de inicialização
 Serial.println("ARDUINO_READY");
@@ -45,15 +45,15 @@ readIndex = (readIndex + 1) % NUM_READINGS;
 buttonState = digitalRead(buttonPin) == LOW;
 // Detecta borda de subida do botão
 if (buttonState && !lastButtonState) {
-    Serial.println("BTN:1");
+Serial.println("BTN:1");
 }
 lastButtonState = buttonState;
 // === ENVIO DOS DADOS DO POTENCIÔMETRO ===
 // Só envia se houver mudança significativa
 if (abs(smoothedValue - lastSentValue) >= MIN_CHANGE) {
-    Serial.print("P1:");
-    Serial.println(smoothedValue);
-    lastSentValue = smoothedValue;
+Serial.print("P1:");
+Serial.println(smoothedValue);
+lastSentValue = smoothedValue;
 }
 delay(20); // Delay reduzido para mais responsividade
 }

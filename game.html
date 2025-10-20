@@ -44,6 +44,7 @@
             background-color: #000;
             border: 4px solid #00ffff;
             box-shadow: 0 0 15px #00ffff;
+            cursor: none; /* Esconde o cursor do mouse sobre o jogo */
         }
         
         .panel {
@@ -111,6 +112,28 @@
         #pauseBtn { background-color: #ffff00; }
         #resetBtn { background-color: #ff8c00; }
 
+        /* --- NOVOS ESTILOS PARA SELEÇÃO DE MODO --- */
+        .mode-select {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5px;
+        }
+        .mode-btn {
+            background-color: #444;
+            color: #888;
+            padding: 8px 5px;
+            font-size: 9px;
+            opacity: 0.7;
+        }
+        .mode-btn.active {
+            background-color: #00ff00;
+            color: #000;
+            opacity: 1;
+            box-shadow: 0 0 5px #00ff00;
+        }
+        /* --- FIM DOS NOVOS ESTILOS --- */
+
+
         .score-board {
             display: flex;
             justify-content: space-around;
@@ -131,15 +154,14 @@
             <div class="game-area">
                 <canvas id="gameCanvas" width="1000" height="600"></canvas>
                  <div class="score-board">
-                    <div class="score">
-                        <div class="score-label">JOGADOR</div>
-                        <div id="playerScore" class="score-value">0</div>
-                    </div>
-                    <div class="score">
-                        <div class="score-label">CPU</div>
-                        <div id="cpuScore" class="score-value">0</div>
-                    </div>
-                </div>
+                     <div class="score">
+                         <div class="score-label">JOGADOR 1</div> <div id="playerScore" class="score-value">0</div>
+                     </div>
+                     <div class="score">
+                         <div id="cpuScoreLabel" class="score-label">CPU</div> 
+                         <div id="cpuScore" class="score-value">0</div>
+                     </div>
+                 </div>
             </div>
 
             <div class="panel">
@@ -154,6 +176,10 @@
 
                 <div class="panel-section">
                     <h2>JOGO</h2>
+                    <div class="mode-select">
+                        <button id="modeCpuBtn" class="mode-btn active">1 VS CPU</button>
+                        <button id="modeP2Btn" class="mode-btn">1 VS 1</button>
+                    </div>
                     <button id="startBtn">INICIAR JOGO</button>
                     <button id="pauseBtn" disabled>PAUSAR</button>
                     <button id="resetBtn">NOVO JOGO</button>
@@ -173,18 +199,20 @@
                 this.PADDLE_HEIGHT = 120;
                 this.BALL_RADIUS = 10;
                 this.WINNING_SCORE = 3;
-                this.PADDLE_SMOOTHING = 0.18; // Fator de suavização (menor = mais suave)
+                this.PADDLE_SMOOTHING = 0.18; 
 
                 // --- ESTADO DO JOGO ---
                 this.playerY = (this.canvas.height - this.PADDLE_HEIGHT) / 2;
-                this.playerTargetY = this.playerY; // Posição alvo para suavização
+                this.playerTargetY = this.playerY; 
                 this.cpuY = (this.canvas.height - this.PADDLE_HEIGHT) / 2;
+                this.cpuTargetY = this.cpuY; // NOVO: Posição alvo para P2 (mouse)
                 this.playerScore = 0;
                 this.cpuScore = 0;
                 this.gameRunning = false;
                 this.isPaused = false;
                 this.gameOver = false;
                 this.winnerText = '';
+                this.gameMode = 'cpu'; // NOVO: 'cpu' ou 'player2'
                 
                 this.ballX = 0;
                 this.ballY = 0;
@@ -208,6 +236,10 @@
                     statusIndicator: document.getElementById('statusIndicator'),
                     playerScoreDisplay: document.getElementById('playerScore'),
                     cpuScoreDisplay: document.getElementById('cpuScore'),
+                    // --- NOVOS ELEMENTOS DE UI ---
+                    modeCpuBtn: document.getElementById('modeCpuBtn'),
+                    modeP2Btn: document.getElementById('modeP2Btn'),
+                    cpuScoreLabel: document.getElementById('cpuScoreLabel'),
                 };
 
                 this.init();
@@ -224,15 +256,56 @@
                 this.ui.startBtn.addEventListener('click', () => this.startGame());
                 this.ui.pauseBtn.addEventListener('click', () => this.togglePause());
                 this.ui.resetBtn.addEventListener('click', () => this.resetGame());
+                
+                // --- NOVOS LISTENERS ---
+                this.ui.modeCpuBtn.addEventListener('click', () => this.setGameMode('cpu'));
+                this.ui.modeP2Btn.addEventListener('click', () => this.setGameMode('player2'));
+
+                // Listener de mouse para o Jogador 2
+                this.canvas.addEventListener('mousemove', (e) => this.handleMouseMovement(e));
             }
 
             // --- LÓGICA DO JOGO ---
+            
+            // NOVO: Método para trocar o modo de jogo
+            setGameMode(mode) {
+                if (this.gameRunning) return; // Não pode trocar no meio do jogo
+
+                this.gameMode = mode;
+                if (mode === 'cpu') {
+                    this.ui.modeCpuBtn.classList.add('active');
+                    this.ui.modeP2Btn.classList.remove('active');
+                    this.ui.cpuScoreLabel.textContent = 'CPU';
+                } else { // modo 'player2'
+                    this.ui.modeCpuBtn.classList.remove('active');
+                    this.ui.modeP2Btn.classList.add('active');
+                    this.ui.cpuScoreLabel.textContent = 'JOGADOR 2';
+                }
+                this.resetGame(); // Reseta o jogo ao trocar de modo
+            }
+
+            // NOVO: Método para controlar o P2 com o mouse
+            handleMouseMovement(event) {
+                // Só controla o P2 se estiver no modo 1v1
+                if (this.gameMode !== 'player2') return;
+
+                const rect = this.canvas.getBoundingClientRect();
+                const scaleY = this.canvas.height / rect.height;
+                const mouseY = (event.clientY - rect.top) * scaleY;
+
+                // Define a posição Y alvo para a raquete da direita (antiga CPU)
+                // Centraliza a raquete no mouse
+                this.cpuTargetY = mouseY - this.PADDLE_HEIGHT / 2;
+            }
+
             startGame() {
                 if (this.gameRunning || this.gameOver) return;
                 this.gameRunning = true;
                 this.isPaused = false;
                 this.ui.pauseBtn.disabled = false;
                 this.ui.pauseBtn.textContent = 'PAUSAR';
+                this.ui.modeCpuBtn.disabled = true; // Desabilita troca de modo
+                this.ui.modeP2Btn.disabled = true;
                 this.resetBall();
             }
             
@@ -241,6 +314,7 @@
                 this.isPaused = !this.isPaused;
                 this.ui.pauseBtn.textContent = this.isPaused ? 'RETOMAR' : 'PAUSAR';
             }
+
             resetGame() {
                 this.playerScore = 0;
                 this.cpuScore = 0;
@@ -251,21 +325,32 @@
                 this.winnerText = '';
                 this.ui.pauseBtn.disabled = true;
                 this.ui.pauseBtn.textContent = 'PAUSAR';
+                this.ui.modeCpuBtn.disabled = false; // Habilita troca de modo
+                this.ui.modeP2Btn.disabled = false;
                 
-                // --- LINHAS NOVAS AQUI ---
                 // Reposiciona as raquetes no centro da tela
                 this.playerY = (this.canvas.height - this.PADDLE_HEIGHT) / 2;
-                this.playerTargetY = this.playerY; // Também reseta o alvo do movimento
+                this.playerTargetY = this.playerY; 
                 this.cpuY = (this.canvas.height - this.PADDLE_HEIGHT) / 2;
-                // --- FIM DAS LINHAS NOVAS ---
+                this.cpuTargetY = this.cpuY; // Reseta P2 também
 
                 this.resetBall(true);
             }
+
             endGame(winner) {
                 this.gameOver = true;
                 this.gameRunning = false;
-                this.winnerText = `${winner} VENCEU!`;
+                
+                // NOVO: Ajusta o nome do vencedor
+                let winnerName = winner;
+                if (winner === 'CPU' && this.gameMode === 'player2') {
+                    winnerName = 'JOGADOR 2';
+                }
+
+                this.winnerText = `${winnerName} VENCEU!`;
                 this.ui.pauseBtn.disabled = true;
+                this.ui.modeCpuBtn.disabled = false; // Habilita troca de modo
+                this.ui.modeP2Btn.disabled = false;
             }
 
             resetBall(shouldStop = false) {
@@ -322,14 +407,12 @@
                 this.potMax = 0;
                 this.updateStatus('Calibrando... Gire o botão!', 'status-calibrating');
 
-                // Reposiciona a raquete no centro ao iniciar a calibração
                 this.playerY = (this.canvas.height - this.PADDLE_HEIGHT) / 2;
                 this.playerTargetY = this.playerY;
 
                 setTimeout(() => {
                     this.isCalibrating = false;
 
-                    // CONDIÇÃO DE SEGURANÇA: Se a faixa de valores for muito pequena, usa o padrão.
                     if ((this.potMax - this.potMin) < 50) { 
                         this.potMin = 0;
                         this.potMax = 1023;
@@ -342,62 +425,85 @@
                     this.ui.connectBtn.textContent = 'DESCONECTAR';
                 }, 5000); // 5 segundos de calibração
             }
+
             async startReading() {
                 const decoder = new TextDecoder();
                 while (this.port?.readable) {
                     this.reader = this.port.readable.getReader();
                     try {
+                        let partialData = ''; // Buffer para dados parciais
                         while (true) {
                             const { value, done } = await this.reader.read();
                             if (done) break;
-                            const text = decoder.decode(value);
-                            this.processArduinoData(text);
+                            
+                            // Adiciona novos dados ao buffer e decodifica
+                            partialData += decoder.decode(value, { stream: true });
+                            
+                            // Processa linhas completas
+                            let newlineIndex;
+                            while ((newlineIndex = partialData.indexOf('\n')) !== -1) {
+                                const line = partialData.substring(0, newlineIndex).trim();
+                                partialData = partialData.substring(newlineIndex + 1);
+                                
+                                if (line) { // Ignora linhas em branco
+                                    this.processArduinoData(line);
+                                }
+                            }
                         }
                     } catch (error) {
-                        // Ignora erros comuns
+                        // Ignora erros
                     } finally {
                         this.reader.releaseLock();
                     }
                 }
             }
-processArduinoData(data) {
-                const lines = data.trim().split('\n');
-                lines.forEach(line => {
-                    if (line.startsWith('P1:')) {
-                        const potValue = parseInt(line.substring(3));
 
-                        // --- NOVA TRAVA DE SEGURANÇA AQUI ---
-                        // Se o valor lido não for um número válido (ex: por ruído na comunicação),
-                        // a função ignora esta leitura e para, esperando a próxima.
-                        if (isNaN(potValue)) {
-                            return; 
-                        }
-                        // --- FIM DA TRAVA DE SEGURANÇA ---
+            // ATENÇÃO: processArduinoData agora processa LINHA POR LINHA
+           // ATENÇÃO: processArduinoData agora processa LINHA POR LINHA
+            processArduinoData(line) {
+                // O bug estava aqui: Havia um "if (isNaN(potValue))" aqui em cima,
+                // antes de "potValue" existir. Eu o removi.
 
-                        if (this.isCalibrating) {
-                            if (potValue < this.potMin) this.potMin = potValue;
-                            if (potValue > this.potMax) this.potMax = potValue;
-                        } else {
-                            const paddleMaxY = this.canvas.height - this.PADDLE_HEIGHT;
-                            this.playerTargetY = this.mapValue(potValue, this.potMin, this.potMax, 0, paddleMaxY);
-                        }
+                if (line.startsWith('P1:')) {
+                    const potValue = parseInt(line.substring(3));
+                    
+                    // A verificação foi movida para AQUI,
+                    // DEPOIS que "potValue" foi criado.
+                    if (isNaN(potValue)) {
+                        return; // Ignora esta linha se não for um número válido
                     }
-                    if (line === 'BTN:1') {
-                        if (this.gameOver) this.resetGame();
-                        else if (!this.gameRunning) this.startGame();
+
+                    if (this.isCalibrating) {
+                        if (potValue < this.potMin) this.potMin = potValue;
+                        if (potValue > this.potMax) this.potMax = potValue;
+                    } else {
+                        const paddleMaxY = this.canvas.height - this.PADDLE_HEIGHT;
+                        // Mapeia o valor e DEPOIS trava
+                        this.playerTargetY = this.mapValue(potValue, this.potMin, this.potMax, 0, paddleMaxY);
                     }
-                });
+                }
+                
+                if (line === 'BTN:1') {
+                    if (this.gameOver) this.resetGame();
+                    else if (!this.gameRunning) this.startGame();
+                }
             }
 
+            // ### CORREÇÃO 1: PROBLEMA DA RAQUETE NÃO IR ATÉ O FIM ###
+            // A lógica foi invertida: primeiro mapeamos e depois travamos o valor
             mapValue(value, inMin, inMax, outMin, outMax) {
-    // TRAVA DE SEGURANÇA CONTRA DIVISÃO POR ZERO
                 const divisor = inMax - inMin;
                 if (divisor === 0) {
-                    return outMin; // Retorna um valor seguro se a faixa de entrada for zero
+                    return (outMin + outMax) / 2; // Retorna o meio se a calibração falhar
                 }
+                
+                // 1. Mapeia o valor (pode "estourar" os limites)
+                const mappedValue = (value - inMin) * (outMax - outMin) / divisor + outMin;
 
-                const clampedValue = Math.max(inMin, Math.min(value, inMax));
-                return (clampedValue - inMin) * (outMax - outMin) / divisor + outMin;
+                // 2. Trava (Clamps) o valor final dentro dos limites da tela
+                // Isso garante que mesmo se o potenciômetro for ruidoso (ex: 1024),
+                // a raquete pare exatamente em outMax (o fundo da tela).
+                return Math.max(outMin, Math.min(mappedValue, outMax));
             }
             
             updateStatus(message, cssClass) {
@@ -406,136 +512,152 @@ processArduinoData(data) {
             }
 
             // --- LOOP PRINCIPAL DO JOGO ---
-      update() {
-        if (this.isPaused || this.gameOver) return;
+            update() {
+                if (this.isPaused || this.gameOver) return;
 
-        // --- LÓGICA DE MOVIMENTO FINAL DA RAQUETE DO JOGADOR ---
-        const distance = this.playerTargetY - this.playerY;
+                // --- MOVIMENTO RAQUETE JOGADOR 1 (ARDUINO) ---
+                let distance = this.playerTargetY - this.playerY;
+                if (Math.abs(distance) < 1) { 
+                    this.playerY = this.playerTargetY;
+                } else {
+                    this.playerY += distance * this.PADDLE_SMOOTHING;
+                }
+                // Trava final (redundante se o mapValue já trava, mas é uma boa garantia)
+                this.playerY = Math.max(0, Math.min(this.canvas.height - this.PADDLE_HEIGHT, this.playerY));
 
-        // CORREÇÃO: Se a distância for menor que 1 pixel, encaixa na posição final.
-        // Isso remove o efeito "imã" de forma mais agressiva.
-        if (Math.abs(distance) < 1) { 
-            this.playerY = this.playerTargetY;
-        } else {
-            // Senão, continua o movimento suave com a nova agilidade.
-            this.playerY += distance * this.PADDLE_SMOOTHING;
-        }
 
-        if (!this.gameRunning) return;
+                if (!this.gameRunning) return;
 
-        // O resto do código continua exatamente igual...
-        // --- MOVIMENTO DA BOLA ---
-        this.ballX += this.ballSpeedX;
-        this.ballY += this.ballSpeedY;
+                // --- MOVIMENTO DA BOLA ---
+                this.ballX += this.ballSpeedX;
+                this.ballY += this.ballSpeedY;
 
-        // --- COLISÃO COM PAREDES (CIMA/BAIXO) ---
-        if (this.ballY - this.BALL_RADIUS < 0) {
-            this.ballY = this.BALL_RADIUS;
-            this.ballSpeedY = -this.ballSpeedY;
-        } else if (this.ballY + this.BALL_RADIUS > this.canvas.height) {
-            this.ballY = this.canvas.height - this.BALL_RADIUS;
-            this.ballSpeedY = -this.ballSpeedY;
-        }
+                // --- COLISÃO COM PAREDES (CIMA/BAIXO) ---
+                if (this.ballY - this.BALL_RADIUS < 0) {
+                    this.ballY = this.BALL_RADIUS;
+                    this.ballSpeedY = -this.ballSpeedY;
+                } else if (this.ballY + this.BALL_RADIUS > this.canvas.height) {
+                    this.ballY = this.canvas.height - this.BALL_RADIUS;
+                    this.ballSpeedY = -this.ballSpeedY;
+                }
 
-        // --- VERIFICA PONTUAÇÃO ---
-        if (this.ballX - this.BALL_RADIUS < 0) {
-            this.cpuScore++;
-            this.updateScoreDisplay();
-            if (this.cpuScore >= this.WINNING_SCORE) {
-                this.endGame('CPU');
-            } else {
-                this.resetBall();
+                // --- VERIFICA PONTUAÇÃO ---
+                if (this.ballX - this.BALL_RADIUS < 0) {
+                    this.cpuScore++; // Ponto para o lado direito (CPU ou P2)
+                    this.updateScoreDisplay();
+                    if (this.cpuScore >= this.WINNING_SCORE) {
+                        this.endGame(this.gameMode === 'cpu' ? 'CPU' : 'JOGADOR 2');
+                    } else {
+                        this.resetBall();
+                    }
+                    return;
+                }
+                if (this.ballX + this.BALL_RADIUS > this.canvas.width) {
+                    this.playerScore++; // Ponto para o Jogador 1
+                    this.updateScoreDisplay();
+                    if (this.playerScore >= this.WINNING_SCORE) {
+                        this.endGame('JOGADOR 1');
+                    } else {
+                        this.resetBall();
+                    }
+                    return;
+                }
+
+                // --- LÓGICA DE COLISÃO COM AS RAQUETES ---
+                if (this.ballX - this.BALL_RADIUS <= this.PADDLE_WIDTH &&
+                    this.ballSpeedX < 0 &&
+                    this.ballY + this.BALL_RADIUS > this.playerY &&
+                    this.ballY - this.BALL_RADIUS < this.playerY + this.PADDLE_HEIGHT) 
+                {
+                    this.ballSpeedX = -this.ballSpeedX * 1.03;
+                    this.ballX = this.PADDLE_WIDTH + this.BALL_RADIUS;
+                }
+
+                if (this.ballX + this.BALL_RADIUS >= this.canvas.width - this.PADDLE_WIDTH &&
+                    this.ballSpeedX > 0 &&
+                    this.ballY + this.BALL_RADIUS > this.cpuY &&
+                    this.ballY - this.BALL_RADIUS < this.cpuY + this.PADDLE_HEIGHT) 
+                {
+                    this.ballSpeedX = -this.ballSpeedX * 1.03; // Aumenta velocidade ao rebater
+                    this.ballX = this.canvas.width - this.PADDLE_WIDTH - this.BALL_RADIUS;
+                }
+
+                // ### CORREÇÃO 2: LÓGICA DE MODO DE JOGO ###
+                // --- IA DA CPU / CONTROLE JOGADOR 2 ---
+                if (this.gameMode === 'cpu') {
+                    // MODO 1 VS CPU: Usa a IA
+                    const cpuCenter = this.cpuY + this.PADDLE_HEIGHT / 2;
+                    const deadZone = 10;
+                    const cpuSpeed = 5.5; // Dificuldade da IA
+
+                    if (cpuCenter < this.ballY - deadZone) {
+                        this.cpuY += cpuSpeed;
+                    } else if (cpuCenter > this.ballY + deadZone) {
+                        this.cpuY -= cpuSpeed;
+                    }
+                } else {
+                    // MODO 1 VS 1: Usa o movimento suave do mouse
+                    distance = this.cpuTargetY - this.cpuY;
+                    if (Math.abs(distance) < 1) {
+                        this.cpuY = this.cpuTargetY;
+                    } else {
+                        this.cpuY += distance * this.PADDLE_SMOOTHING;
+                    }
+                }
+                // Trava a raquete direita (CPU ou P2) dentro da tela
+                this.cpuY = Math.max(0, Math.min(this.canvas.height - this.PADDLE_HEIGHT, this.cpuY));
             }
-            return;
-        }
-        if (this.ballX + this.BALL_RADIUS > this.canvas.width) {
-            this.playerScore++;
-            this.updateScoreDisplay();
-            if (this.playerScore >= this.WINNING_SCORE) {
-                this.endGame('JOGADOR');
-            } else {
-                this.resetBall();
-            }
-            return;
-        }
 
-        // --- LÓGICA DE COLISÃO COM AS RAQUETES ---
-        if (this.ballX - this.BALL_RADIUS <= this.PADDLE_WIDTH &&
-            this.ballSpeedX < 0 &&
-            this.ballY + this.BALL_RADIUS > this.playerY &&
-            this.ballY - this.BALL_RADIUS < this.playerY + this.PADDLE_HEIGHT) 
-        {
-            this.ballSpeedX = -this.ballSpeedX * 1.03;
-            this.ballX = this.PADDLE_WIDTH + this.BALL_RADIUS;
-        }
+            draw() {
+                this.ctx.fillStyle = '#000';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-        if (this.ballX + this.BALL_RADIUS >= this.canvas.width - this.PADDLE_WIDTH &&
-            this.ballSpeedX > 0 &&
-            this.ballY + this.BALL_RADIUS > this.cpuY &&
-            this.ballY - this.BALL_RADIUS < this.cpuY + this.PADDLE_HEIGHT) 
-        {
-            this.ballSpeedX = -this.ballSpeedX;
-            this.ballX = this.canvas.width - this.PADDLE_WIDTH - this.BALL_RADIUS;
-        }
-
-        // --- IA DA CPU ---
-        const cpuCenter = this.cpuY + this.PADDLE_HEIGHT / 2;
-        const deadZone = 10;
-        const cpuSpeed = 5.5;
-
-        if (cpuCenter < this.ballY - deadZone) {
-            this.cpuY += cpuSpeed;
-        } else if (cpuCenter > this.ballY + deadZone) {
-            this.cpuY -= cpuSpeed;
-        }
-
-        this.cpuY = Math.max(0, Math.min(this.canvas.height - this.PADDLE_HEIGHT, this.cpuY));
-    }
-        draw() {
-            this.ctx.fillStyle = '#000';
-            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
-            this.ctx.strokeStyle = '#00ffff';
-            this.ctx.lineWidth = 4;
-            this.ctx.setLineDash([10, 15]);
-            this.ctx.beginPath();
-            this.ctx.moveTo(this.canvas.width / 2, 0);
-            this.ctx.lineTo(this.canvas.width / 2, this.canvas.height);
-            this.ctx.stroke();
-            this.ctx.setLineDash([]);
-
-            this.ctx.fillStyle = '#00ffff';
-            this.ctx.fillRect(0, this.playerY, this.PADDLE_WIDTH, this.PADDLE_HEIGHT);
-            this.ctx.fillStyle = '#ff00ff';
-            this.ctx.fillRect(this.canvas.width - this.PADDLE_WIDTH, this.cpuY, this.PADDLE_WIDTH, this.PADDLE_HEIGHT);
-
-            if (this.gameRunning || this.gameOver) {
-                this.ctx.fillStyle = '#ffffff';
+                this.ctx.strokeStyle = '#00ffff';
+                this.ctx.lineWidth = 4;
+                this.ctx.setLineDash([10, 15]);
                 this.ctx.beginPath();
-                this.ctx.arc(this.ballX, this.ballY, this.BALL_RADIUS, 0, Math.PI * 2);
-                this.ctx.fill();
-            }
-            
-            const centerX = this.canvas.width / 2;
-            const centerY = this.canvas.height / 2;
-            this.ctx.textAlign = 'center';
+                this.ctx.moveTo(this.canvas.width / 2, 0);
+                this.ctx.lineTo(this.canvas.width / 2, this.canvas.height);
+                this.ctx.stroke();
+                this.ctx.setLineDash([]);
 
-            if (this.gameOver) {
-                this.ctx.fillStyle = '#00ff00';
-                this.ctx.font = '40px "Press Start 2P"';
-                this.ctx.fillText(this.winnerText, centerX, centerY);
-                this.ctx.font = '20px "Press Start 2P"';
-                this.ctx.fillText('APERTE "NOVO JOGO"', centerX, centerY + 50);
-            } else if (!this.gameRunning) {
-                this.ctx.fillStyle = '#fff';
-                this.ctx.font = '24px "Press Start 2P"';
-                this.ctx.fillText('APERTE INICIAR', centerX, centerY);
-            } else if (this.isPaused) {
-                this.ctx.fillStyle = '#ffff00';
-                this.ctx.font = '40px "Press Start 2P"';
-                this.ctx.fillText('PAUSADO', centerX, centerY);
+                // Raquete Jogador 1 (Arduino)
+                this.ctx.fillStyle = '#00ffff';
+                this.ctx.fillRect(0, this.playerY, this.PADDLE_WIDTH, this.PADDLE_HEIGHT);
+                
+                // Raquete Direita (CPU ou P2)
+                // NOVO: Muda a cor da raquete com base no modo
+                this.ctx.fillStyle = (this.gameMode === 'cpu') ? '#ff00ff' : '#00ff00';
+                this.ctx.fillRect(this.canvas.width - this.PADDLE_WIDTH, this.cpuY, this.PADDLE_WIDTH, this.PADDLE_HEIGHT);
+
+                // Bola
+                if (this.gameRunning || this.gameOver) {
+                    this.ctx.fillStyle = '#ffffff';
+                    this.ctx.beginPath();
+                    this.ctx.arc(this.ballX, this.ballY, this.BALL_RADIUS, 0, Math.PI * 2);
+                    this.ctx.fill();
+                }
+                
+                const centerX = this.canvas.width / 2;
+                const centerY = this.canvas.height / 2;
+                this.ctx.textAlign = 'center';
+
+                if (this.gameOver) {
+                    this.ctx.fillStyle = '#00ff00';
+                    this.ctx.font = '40px "Press Start 2P"';
+                    this.ctx.fillText(this.winnerText, centerX, centerY);
+                    this.ctx.font = '20px "Press Start 2P"';
+                    this.ctx.fillText('APERTE "NOVO JOGO"', centerX, centerY + 50);
+                } else if (!this.gameRunning) {
+                    this.ctx.fillStyle = '#fff';
+                    this.ctx.font = '24px "Press Start 2P"';
+                    this.ctx.fillText('APERTE INICIAR', centerX, centerY);
+                } else if (this.isPaused) {
+                    this.ctx.fillStyle = '#ffff00';
+                    this.ctx.font = '40px "Press Start 2P"';
+                    this.ctx.fillText('PAUSADO', centerX, centerY);
+                }
             }
-        }
 
             gameLoop() {
                 this.update();
