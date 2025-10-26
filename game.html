@@ -106,13 +106,15 @@
             opacity: 0.5;
             cursor: not-allowed;
         }
-
-        #connectBtn { background-color: #00ffff; }
+        
+        /* --- MUDANÇA: BOTÕES DE CONEXÃO --- */
+        #connectBtnP1 { background-color: #00ffff; } /* Cor P1 */
+        #connectBtnP2 { background-color: #00ff00; } /* Cor P2 */
+        
         #startBtn { background-color: #00ff00; }
         #pauseBtn { background-color: #ffff00; }
         #resetBtn { background-color: #ff8c00; }
-
-        /* --- NOVOS ESTILOS PARA SELEÇÃO DE MODO --- */
+        
         .mode-select {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -131,9 +133,7 @@
             opacity: 1;
             box-shadow: 0 0 5px #00ff00;
         }
-        /* --- FIM DOS NOVOS ESTILOS --- */
-
-
+        
         .score-board {
             display: flex;
             justify-content: space-around;
@@ -168,11 +168,17 @@
                 <div class="panel-section">
                     <h2>CONEXÃO</h2>
                     <div class="status-box">
-                        <span id="statusText">Desconectado</span>
-                        <div id="statusIndicator" class="status-indicator status-disconnected"></div>
+                        <span id="statusTextP1">P1: Desconectado</span>
+                        <div id="statusIndicatorP1" class="status-indicator status-disconnected"></div>
                     </div>
-                    <button id="connectBtn">CONECTAR ARDUINO</button>
-                </div>
+                    <button id="connectBtnP1">CONECTAR JOGADOR 1</button>
+                    
+                    <div class="status-box" style="margin-top: 10px;">
+                        <span id="statusTextP2">P2: Desconectado</span>
+                        <div id="statusIndicatorP2" class="status-indicator status-disconnected"></div>
+                    </div>
+                    <button id="connectBtnP2">CONECTAR JOGADOR 2</button>
+                    </div>
 
                 <div class="panel-section">
                     <h2>JOGO</h2>
@@ -194,49 +200,62 @@
                 this.canvas = document.getElementById(canvasId);
                 this.ctx = this.canvas.getContext('2d');
 
+       
                 // --- CONSTANTES DO JOGO ---
                 this.PADDLE_WIDTH = 15;
                 this.PADDLE_HEIGHT = 120;
                 this.BALL_RADIUS = 10;
                 this.WINNING_SCORE = 3;
-                this.PADDLE_SMOOTHING = 0.18; 
+                this.PADDLE_SMOOTHING = 0.10; // <-- DEIXEI MAIS LENTO (original 0.18)
+                this.INITIAL_BALL_SPEED = 6; // <-- BOLA MAIS LENTA (original 9)
+                this.BALL_ACCELERATION = 1.06; // <-- ACELERAÇÃO MENOR (original 1.08)
 
                 // --- ESTADO DO JOGO ---
+                this.hitCounter = 0; // NOVO: Contador de rebatidas
                 this.playerY = (this.canvas.height - this.PADDLE_HEIGHT) / 2;
                 this.playerTargetY = this.playerY; 
                 this.cpuY = (this.canvas.height - this.PADDLE_HEIGHT) / 2;
-                this.cpuTargetY = this.cpuY; // NOVO: Posição alvo para P2 (mouse)
+                this.cpuTargetY = this.cpuY; 
                 this.playerScore = 0;
                 this.cpuScore = 0;
                 this.gameRunning = false;
                 this.isPaused = false;
                 this.gameOver = false;
                 this.winnerText = '';
-                this.gameMode = 'cpu'; // NOVO: 'cpu' ou 'player2'
+                this.gameMode = 'cpu';
                 
                 this.ballX = 0;
                 this.ballY = 0;
                 this.ballSpeedX = 0;
                 this.ballSpeedY = 0;
 
-                // --- CONEXÃO E CALIBRAÇÃO ---
-                this.port = null;
-                this.reader = null;
-                this.isCalibrating = false;
+                // --- ### INÍCIO DAS MUDANÇAS NO JS (CONEXÃO) ### ---
+                this.portP1 = null;
+                this.readerP1 = null;
+                this.portP2 = null;
+                this.readerP2 = null;
+
+                this.isCalibrating = false; // Apenas P1 calibra
                 this.potMin = 1023;
                 this.potMax = 0;
+                // --- FIM DAS MUDANÇAS NO JS (CONEXÃO) ---
 
                 // --- ELEMENTOS DA UI ---
                 this.ui = {
-                    connectBtn: document.getElementById('connectBtn'),
+                    // --- MUDANÇA: Botões de conexão P1 e P2 ---
+                    connectBtnP1: document.getElementById('connectBtnP1'),
+                    connectBtnP2: document.getElementById('connectBtnP2'),
+                    statusTextP1: document.getElementById('statusTextP1'),
+                    statusIndicatorP1: document.getElementById('statusIndicatorP1'),
+                    statusTextP2: document.getElementById('statusTextP2'),
+                    statusIndicatorP2: document.getElementById('statusIndicatorP2'),
+                    // --- Fim da mudança ---
+                    
                     startBtn: document.getElementById('startBtn'),
                     pauseBtn: document.getElementById('pauseBtn'),
                     resetBtn: document.getElementById('resetBtn'),
-                    statusText: document.getElementById('statusText'),
-                    statusIndicator: document.getElementById('statusIndicator'),
                     playerScoreDisplay: document.getElementById('playerScore'),
                     cpuScoreDisplay: document.getElementById('cpuScore'),
-                    // --- NOVOS ELEMENTOS DE UI ---
                     modeCpuBtn: document.getElementById('modeCpuBtn'),
                     modeP2Btn: document.getElementById('modeP2Btn'),
                     cpuScoreLabel: document.getElementById('cpuScoreLabel'),
@@ -252,24 +271,26 @@
             }
 
             initEventListeners() {
-                this.ui.connectBtn.addEventListener('click', () => this.toggleArduinoConnection());
+                // --- MUDANÇA: Listeners de conexão P1 e P2 ---
+                this.ui.connectBtnP1.addEventListener('click', () => this.toggleArduinoConnection(1));
+                this.ui.connectBtnP2.addEventListener('click', () => this.toggleArduinoConnection(2));
+                // --- Fim da mudança ---
+
                 this.ui.startBtn.addEventListener('click', () => this.startGame());
                 this.ui.pauseBtn.addEventListener('click', () => this.togglePause());
                 this.ui.resetBtn.addEventListener('click', () => this.resetGame());
                 
-                // --- NOVOS LISTENERS ---
                 this.ui.modeCpuBtn.addEventListener('click', () => this.setGameMode('cpu'));
                 this.ui.modeP2Btn.addEventListener('click', () => this.setGameMode('player2'));
 
-                // Listener de mouse para o Jogador 2
+                // Mouse SÓ controla o P2 se o modo for 'player2' E o Arduino P2 não estiver conectado
                 this.canvas.addEventListener('mousemove', (e) => this.handleMouseMovement(e));
             }
 
-            // --- LÓGICA DO JOGO ---
+            // --- LÓGICA DO JOGO (Sem grandes mudanças aqui) ---
             
-            // NOVO: Método para trocar o modo de jogo
             setGameMode(mode) {
-                if (this.gameRunning) return; // Não pode trocar no meio do jogo
+                if (this.gameRunning) return; 
 
                 this.gameMode = mode;
                 if (mode === 'cpu') {
@@ -281,20 +302,16 @@
                     this.ui.modeP2Btn.classList.add('active');
                     this.ui.cpuScoreLabel.textContent = 'JOGADOR 2';
                 }
-                this.resetGame(); // Reseta o jogo ao trocar de modo
+                this.resetGame(); 
             }
 
-            // NOVO: Método para controlar o P2 com o mouse
             handleMouseMovement(event) {
-                // Só controla o P2 se estiver no modo 1v1
-                if (this.gameMode !== 'player2') return;
+                // Só controla o P2 se: modo 1v1 E Arduino P2 NÃO conectado
+                if (this.gameMode !== 'player2' || this.portP2) return;
 
                 const rect = this.canvas.getBoundingClientRect();
                 const scaleY = this.canvas.height / rect.height;
                 const mouseY = (event.clientY - rect.top) * scaleY;
-
-                // Define a posição Y alvo para a raquete da direita (antiga CPU)
-                // Centraliza a raquete no mouse
                 this.cpuTargetY = mouseY - this.PADDLE_HEIGHT / 2;
             }
 
@@ -304,7 +321,7 @@
                 this.isPaused = false;
                 this.ui.pauseBtn.disabled = false;
                 this.ui.pauseBtn.textContent = 'PAUSAR';
-                this.ui.modeCpuBtn.disabled = true; // Desabilita troca de modo
+                this.ui.modeCpuBtn.disabled = true; 
                 this.ui.modeP2Btn.disabled = true;
                 this.resetBall();
             }
@@ -325,14 +342,13 @@
                 this.winnerText = '';
                 this.ui.pauseBtn.disabled = true;
                 this.ui.pauseBtn.textContent = 'PAUSAR';
-                this.ui.modeCpuBtn.disabled = false; // Habilita troca de modo
+                this.ui.modeCpuBtn.disabled = false; 
                 this.ui.modeP2Btn.disabled = false;
-                
-                // Reposiciona as raquetes no centro da tela
+                this.hitCounter = 0; // <-- ADICIONE ESTA LINHA
                 this.playerY = (this.canvas.height - this.PADDLE_HEIGHT) / 2;
                 this.playerTargetY = this.playerY; 
                 this.cpuY = (this.canvas.height - this.PADDLE_HEIGHT) / 2;
-                this.cpuTargetY = this.cpuY; // Reseta P2 também
+                this.cpuTargetY = this.cpuY; 
 
                 this.resetBall(true);
             }
@@ -341,7 +357,6 @@
                 this.gameOver = true;
                 this.gameRunning = false;
                 
-                // NOVO: Ajusta o nome do vencedor
                 let winnerName = winner;
                 if (winner === 'CPU' && this.gameMode === 'player2') {
                     winnerName = 'JOGADOR 2';
@@ -349,7 +364,7 @@
 
                 this.winnerText = `${winnerName} VENCEU!`;
                 this.ui.pauseBtn.disabled = true;
-                this.ui.modeCpuBtn.disabled = false; // Habilita troca de modo
+                this.ui.modeCpuBtn.disabled = false;
                 this.ui.modeP2Btn.disabled = false;
             }
 
@@ -360,7 +375,7 @@
                     this.ballSpeedX = 0;
                     this.ballSpeedY = 0;
                 } else {
-                    this.ballSpeedX = (Math.random() > 0.5 ? 1 : -1) * 7;
+                    this.ballSpeedX = (Math.random() > 0.5 ? 1 : -1) * this.INITIAL_BALL_SPEED;
                     this.ballSpeedY = (Math.random() > 0.5 ? 1 : -1) * (Math.random() * 3 + 2);
                 }
             }
@@ -370,42 +385,93 @@
                 this.ui.cpuScoreDisplay.textContent = this.cpuScore;
             }
 
-            // --- CONEXÃO E CALIBRAÇÃO COM ARDUINO ---
-            async toggleArduinoConnection() {
-                if (this.port) await this.disconnectArduino();
-                else await this.connectArduino();
+            // --- ### INÍCIO DA REESTRUTURAÇÃO DA CONEXÃO ### ---
+            
+            async toggleArduinoConnection(playerNum) {
+                const port = (playerNum === 1) ? this.portP1 : this.portP2;
+                
+                if (port) {
+                    await this.disconnectArduino(playerNum);
+                } else {
+                    await this.connectArduino(playerNum);
+                }
             }
 
-            async connectArduino() {
+            async connectArduino(playerNum) {
                 if (!navigator.serial) {
                     alert("A Web Serial API não é suportada neste navegador. Use Google Chrome ou Edge.");
                     return;
                 }
+                
                 try {
-                    this.updateStatus('Conectando...', 'status-calibrating');
-                    this.port = await navigator.serial.requestPort();
-                    await this.port.open({ baudRate: 9600 });
-                    this.startCalibration();
-                    this.startReading();
+                    // P1 faz calibração, P2 apenas conecta
+                    if (playerNum === 1) {
+                        this.updateStatus(1, 'Calibrando...', 'status-calibrating');
+                    } else {
+                        this.updateStatus(2, 'Conectando...', 'status-calibrating');
+                    }
+                    
+                    const port = await navigator.serial.requestPort();
+                    await port.open({ baudRate: 9600 });
+
+                    if (playerNum === 1) {
+                        this.portP1 = port;
+                        this.startCalibration(); // Inicia calibração (apenas P1)
+                    } else {
+                        this.portP2 = port;
+                        this.updateStatus(2, 'Conectado', 'status-connected');
+                        this.ui.connectBtnP2.textContent = 'DESCONECTAR P2';
+                    }
+                    
+                    this.startReading(playerNum); // Inicia leitura para o jogador
+                    
                 } catch (error) {
-                    this.updateStatus('Erro ao conectar', 'status-disconnected');
+                    console.error(`Erro ao conectar P${playerNum}:`, error);
+                    this.updateStatus(playerNum, 'Erro', 'status-disconnected');
                 }
             }
 
-            async disconnectArduino() {
-                if (this.reader) await this.reader.cancel();
-                if (this.port) await this.port.close();
-                this.port = null;
-                this.reader = null;
-                this.updateStatus('Desconectado', 'status-disconnected');
-                this.ui.connectBtn.textContent = 'CONECTAR ARDUINO';
+            async disconnectArduino(playerNum) {
+                let port = null;
+                let reader = null;
+
+                if (playerNum === 1) {
+                    port = this.portP1;
+                    reader = this.readerP1;
+                } else {
+                    port = this.portP2;
+                    reader = this.readerP2;
+                }
+
+                if (reader) await reader.cancel();
+                if (port) await port.close();
+                
+                if (playerNum === 1) {
+                    this.portP1 = null;
+                    this.readerP1 = null;
+                    this.updateStatus(1, 'P1: Desconectado', 'status-disconnected');
+                    this.ui.connectBtnP1.textContent = 'CONECTAR JOGADOR 1';
+                } else {
+                    this.portP2 = null;
+                    this.readerP2 = null;
+                    this.updateStatus(2, 'P2: Desconectado', 'status-disconnected');
+                    this.ui.connectBtnP2.textContent = 'CONECTAR JOGADOR 2';
+                }
             }
             
-            startCalibration() {
+              startCalibration() {
                 this.isCalibrating = true;
-                this.potMin = 1023;
-                this.potMax = 0;
-                this.updateStatus('Calibrando... Gire o botão!', 'status-calibrating');
+                
+                // ### INÍCIO DA CORREÇÃO ###
+                // Inicia min e max com um valor neutro (o meio da faixa)
+                // para que a primeira leitura do Arduino imediatamente
+                // defina os novos valores min e max.
+                const initialPotValue = 512; 
+                this.potMin = initialPotValue;
+                this.potMax = initialPotValue;
+                // ### FIM DA CORREÇÃO ###
+
+                this.updateStatus(1, 'Calibrando P1... Gire!', 'status-calibrating');
 
                 this.playerY = (this.canvas.height - this.PADDLE_HEIGHT) / 2;
                 this.playerTargetY = this.playerY;
@@ -416,113 +482,119 @@
                     if ((this.potMax - this.potMin) < 50) { 
                         this.potMin = 0;
                         this.potMax = 1023;
-                        console.log('Calibração falhou ou sem movimento, usando valores padrão (0-1023).');
+                        console.log('Calibração P1 falhou, usando valores padrão (0-1023).');
                     } else {
-                        console.log(`Calibração finalizada. Mínimo: ${this.potMin}, Máximo: ${this.potMax}`);
+                        console.log(`Calibração P1 finalizada. Mín: ${this.potMin}, Máx: ${this.potMax}`);
                     }
 
-                    this.updateStatus('Conectado', 'status-connected');
-                    this.ui.connectBtn.textContent = 'DESCONECTAR';
+                    this.updateStatus(1, 'P1: Conectado', 'status-connected');
+                    this.ui.connectBtnP1.textContent = 'DESCONECTAR P1';
                 }, 5000); // 5 segundos de calibração
             }
 
-            async startReading() {
+            async startReading(playerNum) {
                 const decoder = new TextDecoder();
-                while (this.port?.readable) {
-                    this.reader = this.port.readable.getReader();
+                let port = (playerNum === 1) ? this.portP1 : this.portP2;
+                
+                while (port?.readable) {
+                    let reader = port.readable.getReader();
+                    
+                    if(playerNum === 1) this.readerP1 = reader;
+                    else this.readerP2 = reader;
+
                     try {
-                        let partialData = ''; // Buffer para dados parciais
+                        let partialData = ''; 
                         while (true) {
-                            const { value, done } = await this.reader.read();
+                            const { value, done } = await reader.read();
                             if (done) break;
                             
-                            // Adiciona novos dados ao buffer e decodifica
                             partialData += decoder.decode(value, { stream: true });
                             
-                            // Processa linhas completas
                             let newlineIndex;
                             while ((newlineIndex = partialData.indexOf('\n')) !== -1) {
                                 const line = partialData.substring(0, newlineIndex).trim();
                                 partialData = partialData.substring(newlineIndex + 1);
                                 
-                                if (line) { // Ignora linhas em branco
+                                if (line) {
                                     this.processArduinoData(line);
                                 }
                             }
                         }
                     } catch (error) {
-                        // Ignora erros
+                        // Ignora erros (como desconexão)
                     } finally {
-                        this.reader.releaseLock();
+                        reader.releaseLock();
                     }
                 }
             }
 
-            // ATENÇÃO: processArduinoData agora processa LINHA POR LINHA
-           // ATENÇÃO: processArduinoData agora processa LINHA POR LINHA
+            // Esta função AGORA ESTÁ PRONTA PARA P1 E P2
             processArduinoData(line) {
-                // O bug estava aqui: Havia um "if (isNaN(potValue))" aqui em cima,
-                // antes de "potValue" existir. Eu o removi.
-
                 if (line.startsWith('P1:')) {
                     const potValue = parseInt(line.substring(3));
-                    
-                    // A verificação foi movida para AQUI,
-                    // DEPOIS que "potValue" foi criado.
-                    if (isNaN(potValue)) {
-                        return; // Ignora esta linha se não for um número válido
-                    }
+                    if (isNaN(potValue)) return;
 
                     if (this.isCalibrating) {
                         if (potValue < this.potMin) this.potMin = potValue;
                         if (potValue > this.potMax) this.potMax = potValue;
                     } else {
                         const paddleMaxY = this.canvas.height - this.PADDLE_HEIGHT;
-                        // Mapeia o valor e DEPOIS trava
                         this.playerTargetY = this.mapValue(potValue, this.potMin, this.potMax, 0, paddleMaxY);
                     }
                 }
                 
-                if (line === 'BTN:1') {
+                // Lógica para P2
+                else if (line.startsWith('P2:')) {
+                    const potValue = parseInt(line.substring(3));
+                    if (isNaN(potValue)) return;
+                    
+                    // P2 usa a calibração do P1
+                    if (!this.isCalibrating) {
+                         const paddleMaxY = this.canvas.height - this.PADDLE_HEIGHT;
+                        // ATUALIZA A RAQUETE DA DIREITA (cpuTargetY)
+                        this.cpuTargetY = this.mapValue(potValue, this.potMin, this.potMax, 0, paddleMaxY);
+                    }
+                }
+                
+                // Botão de P1 controla o jogo
+                else if (line === 'BTN:1') {
                     if (this.gameOver) this.resetGame();
                     else if (!this.gameRunning) this.startGame();
                 }
             }
 
-            // ### CORREÇÃO 1: PROBLEMA DA RAQUETE NÃO IR ATÉ O FIM ###
-            // A lógica foi invertida: primeiro mapeamos e depois travamos o valor
             mapValue(value, inMin, inMax, outMin, outMax) {
                 const divisor = inMax - inMin;
                 if (divisor === 0) {
-                    return (outMin + outMax) / 2; // Retorna o meio se a calibração falhar
+                    return (outMin + outMax) / 2; 
                 }
-                
-                // 1. Mapeia o valor (pode "estourar" os limites)
                 const mappedValue = (value - inMin) * (outMax - outMin) / divisor + outMin;
-
-                // 2. Trava (Clamps) o valor final dentro dos limites da tela
-                // Isso garante que mesmo se o potenciômetro for ruidoso (ex: 1024),
-                // a raquete pare exatamente em outMax (o fundo da tela).
                 return Math.max(outMin, Math.min(mappedValue, outMax));
             }
             
-            updateStatus(message, cssClass) {
-                this.ui.statusText.textContent = message;
-                this.ui.statusIndicator.className = `status-indicator ${cssClass}`;
+            updateStatus(playerNum, message, cssClass) {
+                if (playerNum === 1) {
+                    this.ui.statusTextP1.textContent = `P1: ${message}`;
+                    this.ui.statusIndicatorP1.className = `status-indicator ${cssClass}`;
+                } else {
+                    this.ui.statusTextP2.textContent = `P2: ${message}`;
+                    this.ui.statusIndicatorP2.className = `status-indicator ${cssClass}`;
+                }
             }
+            // --- ### FIM DA REESTRUTURAÇÃO DA CONEXÃO ### ---
+
 
             // --- LOOP PRINCIPAL DO JOGO ---
             update() {
                 if (this.isPaused || this.gameOver) return;
 
-                // --- MOVIMENTO RAQUETE JOGADOR 1 (ARDUINO) ---
+                // --- MOVIMENTO RAQUETE JOGADOR 1 (ARDUINO P1) ---
                 let distance = this.playerTargetY - this.playerY;
                 if (Math.abs(distance) < 1) { 
                     this.playerY = this.playerTargetY;
                 } else {
                     this.playerY += distance * this.PADDLE_SMOOTHING;
                 }
-                // Trava final (redundante se o mapValue já trava, mas é uma boa garantia)
                 this.playerY = Math.max(0, Math.min(this.canvas.height - this.PADDLE_HEIGHT, this.playerY));
 
 
@@ -543,7 +615,7 @@
 
                 // --- VERIFICA PONTUAÇÃO ---
                 if (this.ballX - this.BALL_RADIUS < 0) {
-                    this.cpuScore++; // Ponto para o lado direito (CPU ou P2)
+                    this.cpuScore++; 
                     this.updateScoreDisplay();
                     if (this.cpuScore >= this.WINNING_SCORE) {
                         this.endGame(this.gameMode === 'cpu' ? 'CPU' : 'JOGADOR 2');
@@ -553,7 +625,7 @@
                     return;
                 }
                 if (this.ballX + this.BALL_RADIUS > this.canvas.width) {
-                    this.playerScore++; // Ponto para o Jogador 1
+                    this.playerScore++; 
                     this.updateScoreDisplay();
                     if (this.playerScore >= this.WINNING_SCORE) {
                         this.endGame('JOGADOR 1');
@@ -562,41 +634,59 @@
                     }
                     return;
                 }
+// --- LÓGICA DE COLISÃO COM AS RAQUETES ---
+                let hitRegistered = false;
 
-                // --- LÓGICA DE COLISÃO COM AS RAQUETES ---
+                // Colisão com Jogador 1 (Esquerda)
                 if (this.ballX - this.BALL_RADIUS <= this.PADDLE_WIDTH &&
                     this.ballSpeedX < 0 &&
                     this.ballY + this.BALL_RADIUS > this.playerY &&
                     this.ballY - this.BALL_RADIUS < this.playerY + this.PADDLE_HEIGHT) 
                 {
-                    this.ballSpeedX = -this.ballSpeedX * 1.03;
-                    this.ballX = this.PADDLE_WIDTH + this.BALL_RADIUS;
+                    this.ballX = this.PADDLE_WIDTH + this.BALL_RADIUS; // Corrige posição
+                    hitRegistered = true;
                 }
-
-                if (this.ballX + this.BALL_RADIUS >= this.canvas.width - this.PADDLE_WIDTH &&
+                
+                // Colisão com Jogador 2 (Direita)
+                else if (this.ballX + this.BALL_RADIUS >= this.canvas.width - this.PADDLE_WIDTH &&
                     this.ballSpeedX > 0 &&
                     this.ballY + this.BALL_RADIUS > this.cpuY &&
                     this.ballY - this.BALL_RADIUS < this.cpuY + this.PADDLE_HEIGHT) 
                 {
-                    this.ballSpeedX = -this.ballSpeedX * 1.03; // Aumenta velocidade ao rebater
-                    this.ballX = this.canvas.width - this.PADDLE_WIDTH - this.BALL_RADIUS;
+                    this.ballX = this.canvas.width - this.PADDLE_WIDTH - this.BALL_RADIUS; // Corrige posição
+                    hitRegistered = true;
                 }
 
-                // ### CORREÇÃO 2: LÓGICA DE MODO DE JOGO ###
+                // Lógica de aceleração (SÓ SE HOUVE REBATIDA)
+                if (hitRegistered) {
+                    this.hitCounter++; // 1. Incrementa o contador
+                    
+                    let speedMultiplier = 1.0; // 2. Por padrão, não acelera
+                    
+                    // 3. Se for a 2ª, 4ª, 6ª rebatida...
+                    if (this.hitCounter % 2 === 0) {
+                        speedMultiplier = this.BALL_ACCELERATION; // Aplica aceleração
+                    }
+
+                    // 4. Inverte a velocidade e aplica o multiplicador
+                    this.ballSpeedX = -this.ballSpeedX * speedMultiplier;
+                }
+
                 // --- IA DA CPU / CONTROLE JOGADOR 2 ---
                 if (this.gameMode === 'cpu') {
                     // MODO 1 VS CPU: Usa a IA
                     const cpuCenter = this.cpuY + this.PADDLE_HEIGHT / 2;
                     const deadZone = 10;
-                    const cpuSpeed = 5.5; // Dificuldade da IA
+                    const cpuSpeed = 5.5; 
+                    if (cpuCenter < this.ballY - deadZone) this.cpuY += cpuSpeed;
+                    else if (cpuCenter > this.ballY + deadZone) this.cpuY -= cpuSpeed;
 
-                    if (cpuCenter < this.ballY - deadZone) {
-                        this.cpuY += cpuSpeed;
-                    } else if (cpuCenter > this.ballY + deadZone) {
-                        this.cpuY -= cpuSpeed;
-                    }
-                } else {
-                    // MODO 1 VS 1: Usa o movimento suave do mouse
+                } else { // MODO 1 VS 1
+                    // Se P2 (Arduino 2) não estiver conectado, o mouse (handleMouseMovement) controla.
+                    // Se P2 (Arduino 2) ESTIVER conectado, processArduinoData controla.
+                    // Em ambos os casos, a variável cpuTargetY é atualizada,
+                    // e a lógica de suavização abaixo move a raquete.
+                    
                     distance = this.cpuTargetY - this.cpuY;
                     if (Math.abs(distance) < 1) {
                         this.cpuY = this.cpuTargetY;
@@ -626,7 +716,6 @@
                 this.ctx.fillRect(0, this.playerY, this.PADDLE_WIDTH, this.PADDLE_HEIGHT);
                 
                 // Raquete Direita (CPU ou P2)
-                // NOVO: Muda a cor da raquete com base no modo
                 this.ctx.fillStyle = (this.gameMode === 'cpu') ? '#ff00ff' : '#00ff00';
                 this.ctx.fillRect(this.canvas.width - this.PADDLE_WIDTH, this.cpuY, this.PADDLE_WIDTH, this.PADDLE_HEIGHT);
 
