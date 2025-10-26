@@ -1,0 +1,503 @@
+/* Reset e configurações básicas */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Variáveis CSS para tema praia */
+:root {
+    --sand-color: #f4d19e;
+    --ocean-blue: #4a90e2;
+    --wave-blue: #6ba8e2;
+    --sun-yellow: #ffd700;
+    --sunset-orange: #ff7f50;
+    --paddle-blue: #2e5cb8;
+    --ball-orange: #ff8c42;
+    --text-dark: #2c3e50;
+    --panel-sand: #f8e5c1;
+}
+
+/* Estilo principal fluido */
+body {
+    background: 
+        /* Sua imagem de praia pixelada aqui */
+        url('https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fimg.freepik.com%2Fpremium-photo%2Fpixel-art-illustration-tropical-beach-scene-with-palm-trees-bright-sun-waves-crashing-shore_36682-108432.jpg%3Fw%3D2000&f=1&nofb=1&ipt=b18175800da754188cf9a38795bc38cbabbd13d30bea051e168600cc300ffbb7') center/cover no-repeat fixed,
+        /* Fallback gradient */
+        linear-gradient(180deg, #87CEEB 0%, #4a90e2 100%);
+    color: var(--text-dark);
+    font-family: 'Press Start 2P', cursive;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    text-align: center;
+    overflow: auto;
+    position: relative;
+}
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    padding: 20px;
+}
+
+.main-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 30px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+/* Área do jogo com tema praia */
+.game-area {
+    position: relative;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(255, 209, 3, 0.2);
+}
+
+#gameCanvas {
+    background: linear-gradient(180deg, var(--ocean-blue) 0%, var(--wave-blue) 100%);
+    border: 8px solid var(--sand-color);
+    cursor: none;
+    display: block;
+}
+
+/* Efeito de ondas suaves */
+.waves {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 20px;
+    background: linear-gradient(180deg, transparent 0%, rgba(255, 255, 255, 0.3) 100%);
+    animation: waves 3s ease-in-out infinite;
+}
+
+@keyframes waves {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-5px);
+    }
+}
+
+/* Sol no background */
+.sun {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 60px;
+    height: 60px;
+    background: radial-gradient(circle, var(--sun-yellow) 0%, var(--sunset-orange) 100%);
+    border-radius: 50%;
+    box-shadow: 0 0 30px var(--sun-yellow);
+    animation: sunGlow 4s ease-in-out infinite;
+}
+
+@keyframes sunGlow {
+    0%, 100% {
+        opacity: 0.8;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.05);
+    }
+}
+
+/* Painel de controle estilo praia */
+.panel {
+    background: var(--panel-sand);
+    border: 3px solid var(--sand-color);
+    padding: 20px;
+    width: 280px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.panel-section {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.panel h2 {
+    color: var(--paddle-blue);
+    font-size: 14px;
+    margin-bottom: 5px;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.status-box {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    background: rgba(255, 255, 255, 0.5);
+    padding: 8px;
+    border-radius: 8px;
+}
+
+.status-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.status-connected { 
+    background-color: #27ae60;
+    box-shadow: 0 0 8px #27ae60;
+}
+
+.status-disconnected { 
+    background-color: #e74c3c;
+    box-shadow: 0 0 8px #e74c3c;
+}
+
+.status-calibrating { 
+    background-color: #f39c12;
+    box-shadow: 0 0 8px #f39c12;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+/* Botões estilo praia */
+button {
+    font-family: 'Press Start 2P', cursive;
+    color: white;
+    border: none;
+    padding: 12px;
+    font-size: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: 8px;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Cores dos botões */
+#connectBtnP1 { 
+    background: linear-gradient(180deg, var(--paddle-blue) 0%, #1e3f8f 100%);
+}
+
+#connectBtnP2 { 
+    background: linear-gradient(180deg, #27ae60 0%, #219653 100%);
+}
+
+#startBtn { 
+    background: linear-gradient(180deg, #27ae60 0%, #219653 100%);
+}
+
+#pauseBtn { 
+    background: linear-gradient(180deg, #f39c12 0%, #e67e22 100%);
+}
+
+#resetBtn { 
+    background: linear-gradient(180deg, var(--ball-orange) 0%, #e67e22 100%);
+}
+
+/* Seleção de modo */
+.mode-select {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.mode-btn {
+    background: #95a5a6;
+    color: white;
+    padding: 10px 5px;
+    font-size: 9px;
+    opacity: 0.7;
+    transition: all 0.3s ease;
+}
+
+.mode-btn.active {
+    background: linear-gradient(180deg, #27ae60 0%, #219653 100%);
+    opacity: 1;
+    box-shadow: 0 0 10px rgba(39, 174, 96, 0.5);
+}
+
+/* Placar */
+.score-board {
+    display: flex;
+    justify-content: space-around;
+    width: 100%;
+    margin-top: 15px;
+    background: rgba(255, 255, 255, 0.8);
+    padding: 15px;
+    border-radius: 12px;
+    border: 3px solid var(--sand-color);
+}
+
+.score { 
+    text-align: center; 
+}
+
+.score-label { 
+    font-size: 14px; 
+    color: var(--paddle-blue);
+    margin-bottom: 8px;
+}
+
+.score-value { 
+    font-size: 32px; 
+    color: var(--text-dark);
+    font-weight: bold;
+}
+
+/* Título com efeito de praia */
+h1 {
+    color: white;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5),
+                 0 0 10px rgba(255, 215, 0, 0.5);
+    font-size: 24px;
+    position: relative;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 10px 20px;
+    border-radius: 10px;
+    backdrop-filter: blur(5px);
+}
+h1::after {
+    content: '';
+    position: absolute;
+    bottom: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100px;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--ball-orange), transparent);
+}
+
+/* Conchas decorativas */
+.shell {
+    position: absolute;
+    width: 20px;
+    height: 15px;
+    background: var(--panel-sand);
+    border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+    opacity: 0.7;
+}
+
+.shell-1 {
+    top: 10px;
+    left: 10px;
+    transform: rotate(45deg);
+}
+
+.shell-2 {
+    bottom: 10px;
+    right: 10px;
+    transform: rotate(-45deg);
+}
+
+/* Efeito de balanço suave nas palmeiras */
+.palm-tree {
+    position: absolute;
+    bottom: -10px;
+    width: 40px;
+    height: 80px;
+    background: #8B4513;
+    border-radius: 5px;
+}
+
+.palm-tree::before {
+    content: '';
+    position: absolute;
+    top: -30px;
+    left: -15px;
+    width: 70px;
+    height: 40px;
+    background: #27ae60;
+    border-radius: 50%;
+    animation: palmSway 4s ease-in-out infinite;
+}
+
+@keyframes palmSway {
+    0%, 100% {
+        transform: rotate(-5deg);
+    }
+    50% {
+        transform: rotate(5deg);
+    }
+}
+
+/* Efeito de espuma nas bordas */
+.foam {
+    position: absolute;
+    width: 100%;
+    height: 10px;
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 50%;
+    bottom: 0;
+    animation: foamMove 2s ease-in-out infinite;
+}
+
+@keyframes foamMove {
+    0%, 100% {
+        transform: scaleX(1);
+        opacity: 0.7;
+    }
+    50% {
+        transform: scaleX(1.1);
+        opacity: 0.9;
+    }
+}
+
+/* Nuvens suaves */
+.cloud {
+    position: absolute;
+    background: white;
+    border-radius: 50%;
+    opacity: 0.8;
+    animation: cloudFloat 20s linear infinite;
+}
+
+.cloud-1 {
+    top: 10%;
+    left: -100px;
+    width: 60px;
+    height: 20px;
+    animation-duration: 25s;
+}
+
+.cloud-2 {
+    top: 20%;
+    right: -80px;
+    width: 40px;
+    height: 15px;
+    animation-duration: 20s;
+}
+
+@keyframes cloudFloat {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(calc(100vw + 200px));
+    }
+}
+
+/* Efeito de respingo leve na bola */
+.ball-splash {
+    position: absolute;
+    width: 20px;
+    height: 10px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    animation: splash 0.3s ease-out;
+}
+
+@keyframes splash {
+    0% {
+        transform: scale(0);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(2);
+        opacity: 0;
+    }
+}
+
+/* Responsividade */
+@media (max-width: 1100px) {
+    .main-content {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    #gameCanvas {
+        width: 100%;
+        max-width: 800px;
+        height: auto;
+    }
+}
+
+@media (max-width: 600px) {
+    .panel {
+        width: 100%;
+        max-width: 280px;
+    }
+    
+    .score-value {
+        font-size: 24px;
+    }
+    
+    h1 {
+        font-size: 18px;
+    }
+    
+    button {
+        padding: 10px;
+        font-size: 9px;
+    }
+}
+
+/* Transições suaves para todos os elementos */
+* {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+/* Efeito de fade in na inicialização */
+.container {
+    animation: fadeIn 1s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Melhorias de performance */
+#gameCanvas {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+}
+
+/* Scroll suave */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Foco acessível */
+button:focus {
+    outline: 2px solid var(--ball-orange);
+    outline-offset: 2px;
+}

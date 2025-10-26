@@ -3,152 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pong com Arduino v2</title>
+    <title>Gira Pong</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            background-color: #0d0d0d;
-            color: #fff;
-            font-family: 'Press Start 2P', cursive;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            text-align: center;
-        }
-
-        .container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .main-content {
-            display: flex;
-            align-items: flex-start;
-            gap: 30px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-        
-        #gameCanvas {
-            background-color: #000;
-            border: 4px solid #00ffff;
-            box-shadow: 0 0 15px #00ffff;
-            cursor: none; /* Esconde o cursor do mouse sobre o jogo */
-        }
-        
-        .panel {
-            background-color: #1a1a1a;
-            border: 2px solid #00ffff;
-            padding: 15px;
-            width: 280px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .panel-section {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-        
-        .panel h2 {
-            color: #00ffff;
-            font-size: 14px;
-            text-shadow: 0 0 5px #00ffff;
-            margin-bottom: 5px;
-        }
-        
-        .status-box {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 12px;
-        }
-
-        .status-indicator {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            transition: background-color 0.3s;
-        }
-
-        .status-connected { background-color: #00ff00; box-shadow: 0 0 10px #00ff00; }
-        .status-disconnected { background-color: #ff0000; box-shadow: 0 0 10px #ff0000; }
-        .status-calibrating { background-color: #ffff00; box-shadow: 0 0 10px #ffff00; }
-
-        button {
-            font-family: 'Press Start 2P', cursive;
-            color: #000;
-            border: none;
-            padding: 10px;
-            font-size: 10px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        button:hover {
-            filter: brightness(1.2);
-        }
-
-        button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        
-        /* --- MUDANÇA: BOTÕES DE CONEXÃO --- */
-        #connectBtnP1 { background-color: #00ffff; } /* Cor P1 */
-        #connectBtnP2 { background-color: #00ff00; } /* Cor P2 */
-        
-        #startBtn { background-color: #00ff00; }
-        #pauseBtn { background-color: #ffff00; }
-        #resetBtn { background-color: #ff8c00; }
-        
-        .mode-select {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 5px;
-        }
-        .mode-btn {
-            background-color: #444;
-            color: #888;
-            padding: 8px 5px;
-            font-size: 9px;
-            opacity: 0.7;
-        }
-        .mode-btn.active {
-            background-color: #00ff00;
-            color: #000;
-            opacity: 1;
-            box-shadow: 0 0 5px #00ff00;
-        }
-        
-        .score-board {
-            display: flex;
-            justify-content: space-around;
-            width: 100%;
-            margin-top: 10px;
-        }
-        .score { text-align: center; }
-        .score-label { font-size: 14px; color: #00ffff; }
-        .score-value { font-size: 32px; color: #fff; }
-
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
-        <h1>PONG COM ARDUINO</h1>
+        <h1>Gira Pong</h1>
         
         <div class="main-content">
             <div class="game-area">
@@ -203,11 +66,11 @@
        
                 // --- CONSTANTES DO JOGO ---
                 this.PADDLE_WIDTH = 15;
-                this.PADDLE_HEIGHT = 120;
+                this.PADDLE_HEIGHT = 130;
                 this.BALL_RADIUS = 10;
                 this.WINNING_SCORE = 3;
-                this.PADDLE_SMOOTHING = 0.10; // <-- DEIXEI MAIS LENTO (original 0.18)
-                this.INITIAL_BALL_SPEED = 6; // <-- BOLA MAIS LENTA (original 9)
+                this.PADDLE_SMOOTHING = 0.12; // <-- DEIXEI MAIS LENTO (original 0.18)
+                this.INITIAL_BALL_SPEED = 7; // <-- BOLA MAIS LENTA (original 9)
                 this.BALL_ACCELERATION = 1.06; // <-- ACELERAÇÃO MENOR (original 1.08)
 
                 // --- ESTADO DO JOGO ---
@@ -458,38 +321,30 @@
                     this.ui.connectBtnP2.textContent = 'CONECTAR JOGADOR 2';
                 }
             }
-            
               startCalibration() {
                 this.isCalibrating = true;
-                
-                // ### INÍCIO DA CORREÇÃO ###
-                // Inicia min e max com um valor neutro (o meio da faixa)
-                // para que a primeira leitura do Arduino imediatamente
-                // defina os novos valores min e max.
-                const initialPotValue = 512; 
-                this.potMin = initialPotValue;
-                this.potMax = initialPotValue;
-                // ### FIM DA CORREÇÃO ###
-
+                this.potMin = 1023; 
+                this.potMax = 0;
                 this.updateStatus(1, 'Calibrando P1... Gire!', 'status-calibrating');
-
                 this.playerY = (this.canvas.height - this.PADDLE_HEIGHT) / 2;
                 this.playerTargetY = this.playerY;
 
                 setTimeout(() => {
                     this.isCalibrating = false;
+                    
+                    // ### MUDANÇA: LOG DE DEBUG ###
+                    console.log(`Calibração terminada. Min detectado: ${this.potMin}, Max detectado: ${this.potMax}`);
+                    // ### FIM DA MUDANÇA ###
 
                     if ((this.potMax - this.potMin) < 50) { 
-                        this.potMin = 0;
-                        this.potMax = 1023;
-                        console.log('Calibração P1 falhou, usando valores padrão (0-1023).');
+                        this.potMin = 0; this.potMax = 1023;
+                        console.log('CALIBRAÇÃO P1 FALHOU! Usando valores padrão (0-1023). Este é o problema!');
                     } else {
-                        console.log(`Calibração P1 finalizada. Mín: ${this.potMin}, Máx: ${this.potMax}`);
+                        console.log(`Calibração P1 SUCESSO. Usando range [${this.potMin}, ${this.potMax}]`);
                     }
-
                     this.updateStatus(1, 'P1: Conectado', 'status-connected');
                     this.ui.connectBtnP1.textContent = 'DESCONECTAR P1';
-                }, 5000); // 5 segundos de calibração
+                }, 5000); 
             }
 
             async startReading(playerNum) {
@@ -528,8 +383,7 @@
                 }
             }
 
-            // Esta função AGORA ESTÁ PRONTA PARA P1 E P2
-            processArduinoData(line) {
+           processArduinoData(line) {
                 if (line.startsWith('P1:')) {
                     const potValue = parseInt(line.substring(3));
                     if (isNaN(potValue)) return;
@@ -538,6 +392,12 @@
                         if (potValue < this.potMin) this.potMin = potValue;
                         if (potValue > this.potMax) this.potMax = potValue;
                     } else {
+                        // ### MUDANÇA: LOG DE DEBUG ###
+                        if (Math.random() < 0.05) { // Loga 5% das vezes (para não poluir)
+                            console.log(`P1 lendo: ${potValue} | Range: [${this.potMin}, ${this.potMax}]`);
+                        }
+                        // ### FIM DA MUDANÇA ###
+
                         const paddleMaxY = this.canvas.height - this.PADDLE_HEIGHT;
                         this.playerTargetY = this.mapValue(potValue, this.potMin, this.potMax, 0, paddleMaxY);
                     }
@@ -547,11 +407,8 @@
                 else if (line.startsWith('P2:')) {
                     const potValue = parseInt(line.substring(3));
                     if (isNaN(potValue)) return;
-                    
-                    // P2 usa a calibração do P1
                     if (!this.isCalibrating) {
                          const paddleMaxY = this.canvas.height - this.PADDLE_HEIGHT;
-                        // ATUALIZA A RAQUETE DA DIREITA (cpuTargetY)
                         this.cpuTargetY = this.mapValue(potValue, this.potMin, this.potMax, 0, paddleMaxY);
                     }
                 }
@@ -698,12 +555,18 @@
                 this.cpuY = Math.max(0, Math.min(this.canvas.height - this.PADDLE_HEIGHT, this.cpuY));
             }
 
+          // ### INÍCIO DAS MUDANÇAS DE RENDERIZAÇÃO ###
+           // ### INÍCIO DAS MUDANÇAS DE RENDERIZAÇÃO ###
+         // ### INÍCIO DAS MUDANÇAS DE RENDERIZAÇÃO ###
             draw() {
-                this.ctx.fillStyle = '#000';
+                // 1. FUNDO TRANSPARENTE COM EFEITO DE RASTRO (MOTION BLUR)
+                this.ctx.fillStyle = 'rgba(0, 119, 190, 0.25)'; // Cor de água (#0077BE)
                 this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-                this.ctx.strokeStyle = '#00ffff';
-                this.ctx.lineWidth = 4;
+
+                // 2. DESENHA A "REDE"
+                this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)'; // Rede branca semi-transparente
+                this.ctx.lineWidth = 5;
                 this.ctx.setLineDash([10, 15]);
                 this.ctx.beginPath();
                 this.ctx.moveTo(this.canvas.width / 2, 0);
@@ -711,22 +574,34 @@
                 this.ctx.stroke();
                 this.ctx.setLineDash([]);
 
+
+                // 3. RAQUETES (COM BORDAS BRANCAS)
+                this.ctx.lineWidth = 2; // Largura da borda para ambas as raquetes
+
                 // Raquete Jogador 1 (Arduino)
-                this.ctx.fillStyle = '#00ffff';
+                this.ctx.fillStyle = '#00ffff'; // Cor Ciano
                 this.ctx.fillRect(0, this.playerY, this.PADDLE_WIDTH, this.PADDLE_HEIGHT);
+                this.ctx.strokeStyle = '#FFFFFF'; // Borda branca
+                this.ctx.strokeRect(0, this.playerY, this.PADDLE_WIDTH, this.PADDLE_HEIGHT);
                 
                 // Raquete Direita (CPU ou P2)
-                this.ctx.fillStyle = (this.gameMode === 'cpu') ? '#ff00ff' : '#00ff00';
+                this.ctx.fillStyle = (this.gameMode === 'cpu') ? '#ff00ff' : '#00ff00'; // Cor Magenta ou Verde
                 this.ctx.fillRect(this.canvas.width - this.PADDLE_WIDTH, this.cpuY, this.PADDLE_WIDTH, this.PADDLE_HEIGHT);
+                this.ctx.strokeStyle = '#FFFFFF'; // Borda branca
+                this.ctx.strokeRect(this.canvas.width - this.PADDLE_WIDTH, this.cpuY, this.PADDLE_WIDTH, this.PADDLE_HEIGHT);
 
-                // Bola
+                
+                // 4. BOLA (LARANJA NORMAL)
                 if (this.gameRunning || this.gameOver) {
-                    this.ctx.fillStyle = '#ffffff';
+                    this.ctx.fillStyle = '#ff8c00'; // <-- COR LARANJA!
                     this.ctx.beginPath();
                     this.ctx.arc(this.ballX, this.ballY, this.BALL_RADIUS, 0, Math.PI * 2);
                     this.ctx.fill();
+                    
+                    // ### EFEITO DE BRILHO REMOVIDO ###
                 }
                 
+                // 5. TEXTOS (PONTUAÇÃO, PAUSE, ETC)
                 const centerX = this.canvas.width / 2;
                 const centerY = this.canvas.height / 2;
                 this.ctx.textAlign = 'center';
@@ -747,7 +622,8 @@
                     this.ctx.fillText('PAUSADO', centerX, centerY);
                 }
             }
-
+            // ### FIM DAS MUDANÇAS DE RENDERIZAÇÃO ###
+            // ### FIM DAS MUDANÇAS DE RENDERIZAÇÃO ###
             gameLoop() {
                 this.update();
                 this.draw();
