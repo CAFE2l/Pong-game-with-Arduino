@@ -54,10 +54,33 @@
                     <button id="startBtn">INICIAR JOGO</button>
                     <button id="pauseBtn" disabled>PAUSAR</button>
                     <button id="resetBtn">NOVO JOGO</button>
+                    <div class="panel-section">
+                    <h2>JOGO</h2>
+                    <div class="mode-select">
+                        <button id="modeCpuBtn" class="mode-btn active">1 VS CPU</button>
+                        <button id="modeP2Btn" class="mode-btn">1 VS 1</button>
+                    </div>
+                    <button id="startBtn">INICIAR JOGO</button>
+                    <button id="pauseBtn" disabled>PAUSAR</button>
+                    <button id="resetBtn">NOVO JOGO</button>
+                </div>
+
+                <div class="panel-section">
+                    <h2>AUDIO</h2>
+                    <button id="muteBtn">SOM: ON</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <audio id="background-music" src="sua-musica-aqui.mp3" loop></audio>
+
+    
 
     <script>
         class PongGame {
@@ -65,6 +88,8 @@
                 this.canvas = document.getElementById(canvasId);
                 this.ctx = this.canvas.getContext('2d');
 
+
+              
     
                 // --- CONSTANTES DO JOGO ---
                 this.PADDLE_WIDTH = 15;
@@ -119,6 +144,8 @@
                     modeCpuBtn: document.getElementById('modeCpuBtn'),
                     modeP2Btn: document.getElementById('modeP2Btn'),
                     cpuScoreLabel: document.getElementById('cpuScoreLabel'),
+                    backgroundMusic: document.getElementById('background-music'),
+                    muteBtn: document.getElementById('muteBtn')
                 };
 
                 this.init();
@@ -139,6 +166,11 @@
                 this.ui.modeCpuBtn.addEventListener('click', () => this.setGameMode('cpu'));
                 this.ui.modeP2Btn.addEventListener('click', () => this.setGameMode('player2'));
                 this.canvas.addEventListener('mousemove', (e) => this.handleMouseMovement(e));
+                this.ui.muteBtn.addEventListener('click', () => this.toggleMute());
+            }
+
+            toggleMute() {
+                this.ui.backgroundMusic.muted = !this.ui.backgroundMusic.muted;
             }
 
             // --- LÓGICA DO JOGO ---
@@ -175,6 +207,7 @@
                 this.ui.modeCpuBtn.disabled = true; 
                 this.ui.modeP2Btn.disabled = true;
                 this.resetBall();
+                this.ui.backgroundMusic.play();
             }
             
             togglePause() {
@@ -455,7 +488,24 @@
                     this.ui.statusIndicatorP2.className = `status-indicator ${cssClass}`;
                 }
             }
+              updateStatus(playerNum, message, cssClass) {
+                // ... (código da função)
+            }
 
+            // 5. ADICIONE ESTA FUNÇÃO INTEIRA
+            toggleMute() {
+                if (this.ui.backgroundMusic.muted) {
+                    // Desmutar
+                    this.ui.backgroundMusic.muted = false;
+                    this.ui.muteBtn.textContent = 'SOM: ON';
+                    this.ui.muteBtn.classList.remove('muted');
+                } else {
+                    // Mutar
+                    this.ui.backgroundMusic.muted = true;
+                    this.ui.muteBtn.textContent = 'SOM: OFF';
+                    this.ui.muteBtn.classList.add('muted');
+                }
+            }
 
             // --- LOOP PRINCIPAL DO JOGO ---
             update() {
