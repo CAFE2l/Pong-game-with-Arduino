@@ -272,15 +272,35 @@
                 let port = (playerNum === 1) ? this.portP1 : this.portP2;
                 let reader = (playerNum === 1) ? this.readerP1 : this.readerP2;
 
-                if (reader) await reader.cancel();
-                if (port) await port.close();
+                // 1. Cancela o leitor. Isso faz o loop 'reader.read()'
+                // dentro de 'startReading' parar (retornando { done: true }).
+                if (reader) {
+                    try {
+                        await reader.cancel();
+                    } catch (error) {
+                        console.warn(`Erro ao cancelar leitor ${playerNum}:`, error.message);
+                    }
+                }
                 
+                // 2. Fecha a porta.
+                if (port) {
+                    try {
+                        await port.close();
+                    } catch (error) {
+                        console.warn(`Erro ao fechar porta ${playerNum}:`, error.message);
+                    }
+                }
+                
+                // 3. Seta as propriedades da classe para 'null'.
+                // ESTE É O PASSO CRÍTICO que faz o loop 'startReading' parar.
                 if (playerNum === 1) {
-                    this.portP1 = null; this.readerP1 = null;
+                    this.portP1 = null; 
+                    this.readerP1 = null;
                     this.updateStatus(1, 'P1: Desconectado', 'status-disconnected');
                     this.ui.connectBtnP1.textContent = 'CONECTAR JOGADOR 1';
                 } else {
-                    this.portP2 = null; this.readerP2 = null;
+                    this.portP2 = null; 
+                    this.readerP2 = null;
                     this.updateStatus(2, 'P2: Desconectado', 'status-disconnected');
                     this.ui.connectBtnP2.textContent = 'CONECTAR JOGADOR 2';
                 }
@@ -334,12 +354,17 @@
                 }, 5000); // 5 segundos de calibração
             }
 
-            async startReading(playerNum) {
+           async startReading(playerNum) {
                 const decoder = new TextDecoder();
-                let port = (playerNum === 1) ? this.portP1 : this.portP2;
                 
-                while (port?.readable) {
+                // O loop agora checa a propriedade da classe (this.portP1)
+                // em vez de uma variável local. Isso é a chave da correção.
+                while ((playerNum === 1 && this.portP1?.readable) || (playerNum === 2 && this.portP2?.readable)) {
+                    
+                    // Pega a porta e o leitor corretos
+                    let port = (playerNum === 1) ? this.portP1 : this.portP2;
                     let reader = port.readable.getReader();
+                    
                     if(playerNum === 1) this.readerP1 = reader;
                     else this.readerP2 = reader;
 
@@ -347,7 +372,13 @@
                         let partialData = ''; 
                         while (true) {
                             const { value, done } = await reader.read();
-                            if (done) break;
+                            
+                            // Quando disconnectArduino() chama reader.cancel(),
+                            // 'done' se torna 'true' e o loop quebra.
+                            if (done) {
+                                break; // Sai do loop de leitura interno
+                            }
+                            
                             partialData += decoder.decode(value, { stream: true });
                             let newlineIndex;
                             while ((newlineIndex = partialData.indexOf('\n')) !== -1) {
@@ -356,11 +387,23 @@
                                 if (line) this.processArduinoData(line);
                             }
                         }
-                    } catch (error) { } 
-                    finally { reader.releaseLock(); }
+                    } catch (error) { 
+                        // Isso é normal acontecer ao desconectar (ex: "NetworkError")
+                        // O importante é que o catch impede o crash.
+                        console.log(`Porta ${playerNum} fechada ou com erro:`, error.message);
+                    } 
+                    finally { 
+                        // Libera o leitor para a porta ser fechada
+                        reader.releaseLock(); 
+                    }
+
+                    // O loop interno quebrou (seja por 'done' or 'error').
+                    // O loop 'while' externo vai agora re-checar a condição.
+                    // Como o disconnectArduino() vai ter setado 'this.portP1 = null',
+                    // a condição 'this.portP1?.readable' será 'undefined' (falso),
+                    // e este loop 'startReading' vai terminar limpo.
                 }
             }
-            
             // Versão correta do processamento (sem inversão)
             processArduinoData(line) {
                 if (line.startsWith('P1:')) {
