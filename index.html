@@ -278,7 +278,7 @@
                 this.BALL_RADIUS = 10;
                 this.WINNING_SCORE = 3;
                 this.PADDLE_SMOOTHING = 0.12;
-                this.INITIAL_BALL_SPEED = 5; // REDUZIDO de 7 para 5
+                this.INITIAL_BALL_SPEED = 5;
                 this.BALL_ACCELERATION = 1.05;
 
                 // --- ESTADO DO JOGO ---
@@ -305,10 +305,11 @@
                 this.readerP1 = null;
                 this.portP2 = null;
                 this.readerP2 = null;
-                this.isCalibrating = false; 
+                this.isCalibratingP1 = false; // SEPARADO PARA CADA PLAYER
+                this.isCalibratingP2 = false;
                 this.potMin = 1023;
                 this.potMax = 0;
-                this.potMinP2 = 1023; // CALIBRAÇÃO SEPARADA PARA P2
+                this.potMinP2 = 1023;
                 this.potMaxP2 = 0;
 
                 // --- ELEMENTOS DA UI ---
@@ -442,7 +443,7 @@
                     this.ballSpeedY = 0;
                 } else {
                     this.ballSpeedX = (Math.random() > 0.5 ? 1 : -1) * this.INITIAL_BALL_SPEED;
-                    this.ballSpeedY = (Math.random() > 0.5 ? 1 : -1) * (Math.random() * 2 + 1); // REDUZIDO
+                    this.ballSpeedY = (Math.random() > 0.5 ? 1 : -1) * (Math.random() * 2 + 1);
                 }
             }
 
@@ -488,25 +489,26 @@
                 }
             }
 
-            // CALIBRAÇÃO MELHORADA
+            // CALIBRAÇÃO CORRIGIDA - SEPARADA PARA CADA PLAYER
             startCalibration(playerNum) {
                 if (playerNum === 1) {
-                    this.isCalibrating = true;
+                    this.isCalibratingP1 = true;
                     this.potMin = 1023;
                     this.potMax = 0;
                     this.updateStatus(1, 'Gire o POT!', 'status-calibrating');
                     
-                    // Mensagem mais clara e tempo maior para calibração
                     setTimeout(() => {
-                        this.isCalibrating = false;
+                        this.isCalibratingP1 = false;
                         this.finalizeCalibration(playerNum);
-                    }, 6000); // 6 segundos para calibração
+                    }, 6000);
                 } else {
+                    this.isCalibratingP2 = true;
                     this.potMinP2 = 1023;
                     this.potMaxP2 = 0;
                     this.updateStatus(2, 'Gire o POT!', 'status-calibrating');
                     
                     setTimeout(() => {
+                        this.isCalibratingP2 = false;
                         this.finalizeCalibration(playerNum);
                     }, 6000);
                 }
@@ -516,19 +518,16 @@
                 if (playerNum === 1) {
                     let range = this.potMax - this.potMin;
                     
-                    // VERIFICAÇÃO MAIS ROBUSTA DA CALIBRAÇÃO
-                    if (range < 100) { // Range mínimo aumentado
+                    console.log(`P1 - Range calibrado: ${range}, Min: ${this.potMin}, Max: ${this.potMax}`);
+                    
+                    if (range < 100) {
                         console.warn(`Calibração P1 fraca. Range: ${range}`);
                         
-                        // Se o range é muito pequeno, força valores padrão
                         if (this.potMin < 500) {
-                            // Usuário mexeu mais para baixo
                             this.potMax = 1023;
                         } else if (this.potMax > 500) {
-                            // Usuário mexeu mais para cima
                             this.potMin = 0;
                         } else {
-                            // Calibração muito ruim, usa valores padrão
                             this.potMin = 0;
                             this.potMax = 1023;
                         }
@@ -537,8 +536,14 @@
                     
                     this.updateStatus(1, 'Conectado', 'status-connected');
                     this.ui.connectBtnP1.textContent = 'DESCONECTAR P1';
+                    
+                    // TESTE: Mostra valores finais no console
+                    console.log(`P1 CALIBRADO - Min: ${this.potMin}, Max: ${this.potMax}, Range: ${this.potMax - this.potMin}`);
+                    
                 } else {
                     let range = this.potMaxP2 - this.potMinP2;
+                    
+                    console.log(`P2 - Range calibrado: ${range}, Min: ${this.potMinP2}, Max: ${this.potMaxP2}`);
                     
                     if (range < 100) {
                         console.warn(`Calibração P2 fraca. Range: ${range}`);
@@ -556,6 +561,8 @@
                     
                     this.updateStatus(2, 'Conectado', 'status-connected');
                     this.ui.connectBtnP2.textContent = 'DESCONECTAR P2';
+                    
+                    console.log(`P2 CALIBRADO - Min: ${this.potMinP2}, Max: ${this.potMaxP2}, Range: ${this.potMaxP2 - this.potMinP2}`);
                 }
             }
 
@@ -582,11 +589,13 @@
                 if (playerNum === 1) {
                     this.portP1 = null; 
                     this.readerP1 = null;
+                    this.isCalibratingP1 = false;
                     this.updateStatus(1, 'Desconectado', 'status-disconnected');
                     this.ui.connectBtnP1.textContent = 'CONECTAR JOGADOR 1';
                 } else {
                     this.portP2 = null; 
                     this.readerP2 = null;
+                    this.isCalibratingP2 = false;
                     this.updateStatus(2, 'Desconectado', 'status-disconnected');
                     this.ui.connectBtnP2.textContent = 'CONECTAR JOGADOR 2';
                 }
@@ -626,32 +635,41 @@
                 }
             }
 
-            // PROCESSAMENTO CORRIGIDO COM CALIBRAÇÃO SEPARADA
+            // PROCESSAMENTO CORRIGIDO
             processArduinoData(line, playerNum) {
+                // DEBUG: Mostra todas as linhas recebidas
+                console.log(`P${playerNum} recebido:`, line);
+
                 if (line.startsWith('P1:') && playerNum === 1) {
                     const potValue = parseInt(line.substring(3));
                     if (isNaN(potValue)) return;
 
-                    if (this.isCalibrating) {
+                    console.log(`P1 - Valor: ${potValue}, Calibrando: ${this.isCalibratingP1}`);
+
+                    if (this.isCalibratingP1) {
                         if (potValue < this.potMin) this.potMin = potValue;
                         if (potValue > this.potMax) this.potMax = potValue;
+                        console.log(`P1 Calibrando - Min: ${this.potMin}, Max: ${this.potMax}`);
                     } else {
                         const paddleMaxY = this.canvas.height - this.PADDLE_HEIGHT;
-                        // MAPEAMENTO CORRETO PARA TODO O CAMPO
                         this.playerTargetY = this.mapValue(potValue, this.potMin, this.potMax, 0, paddleMaxY);
+                        console.log(`P1 Movendo - Valor: ${potValue}, TargetY: ${this.playerTargetY}`);
                     }
                 }
                 else if (line.startsWith('P2:') && playerNum === 2) {
                     const potValue = parseInt(line.substring(3));
                     if (isNaN(potValue)) return;
-                    
-                    // Calibração separada para P2
-                    if (this.ui.statusIndicatorP2.classList.contains('status-calibrating')) {
+
+                    console.log(`P2 - Valor: ${potValue}, Calibrando: ${this.isCalibratingP2}`);
+
+                    if (this.isCalibratingP2) {
                         if (potValue < this.potMinP2) this.potMinP2 = potValue;
                         if (potValue > this.potMaxP2) this.potMaxP2 = potValue;
+                        console.log(`P2 Calibrando - Min: ${this.potMinP2}, Max: ${this.potMaxP2}`);
                     } else {
                         const paddleMaxY = this.canvas.height - this.PADDLE_HEIGHT;
                         this.cpuTargetY = this.mapValue(potValue, this.potMinP2, this.potMaxP2, 0, paddleMaxY);
+                        console.log(`P2 Movendo - Valor: ${potValue}, TargetY: ${this.cpuTargetY}`);
                     }
                 }
                 else if (line === 'BTN:1' && playerNum === 1) {
@@ -662,13 +680,18 @@
 
             // FUNÇÃO DE MAPEAMENTO MELHORADA
             mapValue(value, inMin, inMax, outMin, outMax) {
-                // Garante que os valores de entrada são válidos
-                if (inMax === inMin) return (outMin + outMax) / 2;
+                if (inMax === inMin) {
+                    console.warn('Divisão por zero no mapeamento!');
+                    return (outMin + outMax) / 2;
+                }
                 
-                // Mapeamento normal
                 let mappedValue = (value - inMin) * (outMax - outMin) / (inMax - inMin) + outMin;
                 
-                // Limita aos valores de saída
+                // DEBUG do mapeamento
+                if (Math.random() < 0.01) { // Apenas 1% das vezes para não poluir o console
+                    console.log(`Mapeamento: ${value} -> ${mappedValue} [${inMin}-${inMax} -> ${outMin}-${outMax}]`);
+                }
+                
                 return Math.max(outMin, Math.min(mappedValue, outMax));
             }
             
@@ -694,7 +717,7 @@
 
                 if (!this.gameRunning) return;
 
-                // Movimento Bola (VELOCIDADE REDUZIDA)
+                // Movimento Bola
                 this.ballX += this.ballSpeedX;
                 this.ballY += this.ballSpeedY;
 
@@ -744,7 +767,6 @@
                         speedMultiplier = this.BALL_ACCELERATION;
                     }
                     this.ballSpeedX = -this.ballSpeedX * speedMultiplier;
-                    // Adiciona um pouco de variação no ângulo Y para tornar o jogo mais interessante
                     this.ballSpeedY += (Math.random() - 0.5) * 2;
                 }
 
@@ -752,7 +774,7 @@
                 if (this.gameMode === 'cpu') {
                     const cpuCenter = this.cpuY + this.PADDLE_HEIGHT / 2;
                     const deadZone = 10;
-                    const cpuSpeed = 4.5; // REDUZIDO
+                    const cpuSpeed = 4.5;
                     if (cpuCenter < this.ballY - deadZone) this.cpuY += cpuSpeed;
                     else if (cpuCenter > this.ballY + deadZone) this.cpuY -= cpuSpeed;
                 } else { 
