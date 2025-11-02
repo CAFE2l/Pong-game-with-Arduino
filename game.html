@@ -8,19 +8,218 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     
-    <link rel="stylesheet" href="style.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
+        body {
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            color: white;
+            font-family: 'Press Start 2P', cursive;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #00ffff;
+            text-shadow: 0 0 10px #00ffff;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+        }
+
+        .main-content {
+            display: flex;
+            gap: 30px;
+            align-items: flex-start;
+        }
+
+        .game-area {
+            flex: 1;
+            position: relative;
+        }
+
+        #gameCanvas {
+            border: 3px solid #00ffff;
+            border-radius: 10px;
+            background: rgba(0, 119, 190, 0.1);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+            display: block;
+        }
+
+        .score-board {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #00ffff;
+        }
+
+        .score {
+            text-align: center;
+        }
+
+        .score-label {
+            font-size: 0.8em;
+            color: #ccc;
+            margin-bottom: 5px;
+        }
+
+        .score-value {
+            font-size: 2em;
+            color: #00ff00;
+            text-shadow: 0 0 10px #00ff00;
+        }
+
+        .panel {
+            width: 300px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #ff00ff;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 20px rgba(255, 0, 255, 0.3);
+        }
+
+        .panel-section {
+            margin-bottom: 25px;
+        }
+
+        .panel-section h2 {
+            color: #ff00ff;
+            font-size: 0.9em;
+            margin-bottom: 15px;
+            text-align: center;
+            text-shadow: 0 0 5px #ff00ff;
+        }
+
+        .status-box {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 12px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            font-size: 0.7em;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-left: 10px;
+        }
+
+        .status-connected {
+            background: #00ff00;
+            box-shadow: 0 0 10px #00ff00;
+        }
+
+        .status-disconnected {
+            background: #ff4444;
+            box-shadow: 0 0 10px #ff4444;
+        }
+
+        .status-calibrating {
+            background: #ffff00;
+            box-shadow: 0 0 10px #ffff00;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #ff00ff, #00ffff);
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.7em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 0, 255, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .mode-select {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 10px;
+            font-size: 0.6em;
+        }
+
+        .mode-btn.active {
+            background: linear-gradient(45deg, #00ff00, #00ffff);
+            box-shadow: 0 0 10px #00ff00;
+        }
+
+        .muted {
+            background: linear-gradient(45deg, #ff4444, #ff6666) !important;
+        }
+
+        @media (max-width: 1200px) {
+            .main-content {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .panel {
+                width: 100%;
+                max-width: 500px;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <h1>Gira Pong</h1>
+        <h1>GIRA PONG</h1>
         
         <div class="main-content">
             <div class="game-area">
                 <canvas id="gameCanvas" width="1000" height="600"></canvas>
                  <div class="score-board">
                      <div class="score">
-                         <div class="score-label">JOGADOR 1</div> <div id="playerScore" class="score-value">0</div>
+                         <div class="score-label">JOGADOR 1</div> 
+                         <div id="playerScore" class="score-value">0</div>
                      </div>
                      <div class="score">
                          <div id="cpuScoreLabel" class="score-label">CPU</div> 
@@ -54,15 +253,11 @@
                     <button id="startBtn">INICIAR JOGO</button>
                     <button id="pauseBtn" disabled>PAUSAR</button>
                     <button id="resetBtn">NOVO JOGO</button>
-                    <div class="panel-section"></div>          
+                </div>
+
                 <div class="panel-section">
                     <h2>AUDIO</h2>
                     <button id="muteBtn">SOM: ON</button>
-                </div>
-
-            </div>
-        </div>
-    </div>
                 </div>
             </div>
         </div>
@@ -70,28 +265,23 @@
 
     <audio id="background-music" src="sua-musica-aqui.mp3" loop></audio>
 
-    
-
     <script>
         class PongGame {
             constructor(canvasId) {
                 this.canvas = document.getElementById(canvasId);
                 this.ctx = this.canvas.getContext('2d');
 
-
-              
-    
-                // --- CONSTANTES DO JOGO ---
+                // --- CONSTANTES DO JOGO (VELOCIDADE REDUZIDA) ---
                 this.PADDLE_WIDTH = 15;
                 this.PADDLE_HEIGHT = 130;
                 this.BALL_RADIUS = 10;
                 this.WINNING_SCORE = 3;
-                this.PADDLE_SMOOTHING = 0.12; // Raquetes mais lentas
-                this.INITIAL_BALL_SPEED = 7; // Velocidade inicial
-                this.BALL_ACCELERATION = 1.05; // Aceleração suave
+                this.PADDLE_SMOOTHING = 0.12;
+                this.INITIAL_BALL_SPEED = 5; // REDUZIDO de 7 para 5
+                this.BALL_ACCELERATION = 1.05;
 
                 // --- ESTADO DO JOGO ---
-                this.hitCounter = 0; // Contador de rebatidas
+                this.hitCounter = 0;
                 this.playerY = (this.canvas.height - this.PADDLE_HEIGHT) / 2;
                 this.playerTargetY = this.playerY; 
                 this.cpuY = (this.canvas.height - this.PADDLE_HEIGHT) / 2;
@@ -117,6 +307,8 @@
                 this.isCalibrating = false; 
                 this.potMin = 1023;
                 this.potMax = 0;
+                this.potMinP2 = 1023; // CALIBRAÇÃO SEPARADA PARA P2
+                this.potMaxP2 = 0;
 
                 // --- ELEMENTOS DA UI ---
                 this.ui = {
@@ -161,6 +353,8 @@
 
             toggleMute() {
                 this.ui.backgroundMusic.muted = !this.ui.backgroundMusic.muted;
+                this.ui.muteBtn.textContent = this.ui.backgroundMusic.muted ? 'SOM: OFF' : 'SOM: ON';
+                this.ui.muteBtn.classList.toggle('muted', this.ui.backgroundMusic.muted);
             }
 
             // --- LÓGICA DO JOGO ---
@@ -218,7 +412,7 @@
                 this.ui.pauseBtn.textContent = 'PAUSAR';
                 this.ui.modeCpuBtn.disabled = false; 
                 this.ui.modeP2Btn.disabled = false;
-                this.hitCounter = 0; // Reseta o contador
+                this.hitCounter = 0;
                 this.playerY = (this.canvas.height - this.PADDLE_HEIGHT) / 2;
                 this.playerTargetY = this.playerY; 
                 this.cpuY = (this.canvas.height - this.PADDLE_HEIGHT) / 2;
@@ -247,7 +441,7 @@
                     this.ballSpeedY = 0;
                 } else {
                     this.ballSpeedX = (Math.random() > 0.5 ? 1 : -1) * this.INITIAL_BALL_SPEED;
-                    this.ballSpeedY = (Math.random() > 0.5 ? 1 : -1) * (Math.random() * 3 + 2);
+                    this.ballSpeedY = (Math.random() > 0.5 ? 1 : -1) * (Math.random() * 2 + 1); // REDUZIDO
                 }
             }
 
@@ -256,7 +450,7 @@
                 this.ui.cpuScoreDisplay.textContent = this.cpuScore;
             }
 
-            // --- LÓGICA DE CONEXÃO ---
+            // --- LÓGICA DE CONEXÃO CORRIGIDA ---
             
             async toggleArduinoConnection(playerNum) {
                 const port = (playerNum === 1) ? this.portP1 : this.portP2;
@@ -270,24 +464,97 @@
                     return;
                 }
                 try {
-                    if (playerNum === 1) this.updateStatus(1, 'Calibrando...', 'status-calibrating');
-                    else this.updateStatus(2, 'Conectando...', 'status-calibrating');
+                    if (playerNum === 1) {
+                        this.updateStatus(1, 'Calibrando...', 'status-calibrating');
+                    } else {
+                        this.updateStatus(2, 'Calibrando...', 'status-calibrating');
+                    }
                     
                     const port = await navigator.serial.requestPort();
                     await port.open({ baudRate: 9600 });
 
                     if (playerNum === 1) {
                         this.portP1 = port;
-                        this.startCalibration(); 
+                        this.startCalibration(1);
                     } else {
                         this.portP2 = port;
-                        this.updateStatus(2, 'Conectado', 'status-connected');
-                        this.ui.connectBtnP2.textContent = 'DESCONECTAR P2';
+                        this.startCalibration(2);
                     }
-                    this.startReading(playerNum); 
+                    this.startReading(playerNum);
                 } catch (error) {
                     console.error(`Erro ao conectar P${playerNum}:`, error);
                     this.updateStatus(playerNum, 'Erro', 'status-disconnected');
+                }
+            }
+
+            // CALIBRAÇÃO MELHORADA
+            startCalibration(playerNum) {
+                if (playerNum === 1) {
+                    this.isCalibrating = true;
+                    this.potMin = 1023;
+                    this.potMax = 0;
+                    this.updateStatus(1, 'Gire o POT!', 'status-calibrating');
+                    
+                    // Mensagem mais clara e tempo maior para calibração
+                    setTimeout(() => {
+                        this.isCalibrating = false;
+                        this.finalizeCalibration(playerNum);
+                    }, 6000); // 6 segundos para calibração
+                } else {
+                    this.potMinP2 = 1023;
+                    this.potMaxP2 = 0;
+                    this.updateStatus(2, 'Gire o POT!', 'status-calibrating');
+                    
+                    setTimeout(() => {
+                        this.finalizeCalibration(playerNum);
+                    }, 6000);
+                }
+            }
+
+            finalizeCalibration(playerNum) {
+                if (playerNum === 1) {
+                    let range = this.potMax - this.potMin;
+                    
+                    // VERIFICAÇÃO MAIS ROBUSTA DA CALIBRAÇÃO
+                    if (range < 100) { // Range mínimo aumentado
+                        console.warn(`Calibração P1 fraca. Range: ${range}`);
+                        
+                        // Se o range é muito pequeno, força valores padrão
+                        if (this.potMin < 500) {
+                            // Usuário mexeu mais para baixo
+                            this.potMax = 1023;
+                        } else if (this.potMax > 500) {
+                            // Usuário mexeu mais para cima
+                            this.potMin = 0;
+                        } else {
+                            // Calibração muito ruim, usa valores padrão
+                            this.potMin = 0;
+                            this.potMax = 1023;
+                        }
+                        console.log(`P1 calibrado forçadamente: Min=${this.potMin}, Max=${this.potMax}`);
+                    }
+                    
+                    this.updateStatus(1, 'Conectado', 'status-connected');
+                    this.ui.connectBtnP1.textContent = 'DESCONECTAR P1';
+                } else {
+                    let range = this.potMaxP2 - this.potMinP2;
+                    
+                    if (range < 100) {
+                        console.warn(`Calibração P2 fraca. Range: ${range}`);
+                        
+                        if (this.potMinP2 < 500) {
+                            this.potMaxP2 = 1023;
+                        } else if (this.potMaxP2 > 500) {
+                            this.potMinP2 = 0;
+                        } else {
+                            this.potMinP2 = 0;
+                            this.potMaxP2 = 1023;
+                        }
+                        console.log(`P2 calibrado forçadamente: Min=${this.potMinP2}, Max=${this.potMaxP2}`);
+                    }
+                    
+                    this.updateStatus(2, 'Conectado', 'status-connected');
+                    this.ui.connectBtnP2.textContent = 'DESCONECTAR P2';
                 }
             }
 
@@ -295,8 +562,6 @@
                 let port = (playerNum === 1) ? this.portP1 : this.portP2;
                 let reader = (playerNum === 1) ? this.readerP1 : this.readerP2;
 
-                // 1. Cancela o leitor. Isso faz o loop 'reader.read()'
-                // dentro de 'startReading' parar (retornando { done: true }).
                 if (reader) {
                     try {
                         await reader.cancel();
@@ -305,7 +570,6 @@
                     }
                 }
                 
-                // 2. Fecha a porta.
                 if (port) {
                     try {
                         await port.close();
@@ -314,77 +578,23 @@
                     }
                 }
                 
-                // 3. Seta as propriedades da classe para 'null'.
-                // ESTE É O PASSO CRÍTICO que faz o loop 'startReading' parar.
                 if (playerNum === 1) {
                     this.portP1 = null; 
                     this.readerP1 = null;
-                    this.updateStatus(1, 'P1: Desconectado', 'status-disconnected');
+                    this.updateStatus(1, 'Desconectado', 'status-disconnected');
                     this.ui.connectBtnP1.textContent = 'CONECTAR JOGADOR 1';
                 } else {
                     this.portP2 = null; 
                     this.readerP2 = null;
-                    this.updateStatus(2, 'P2: Desconectado', 'status-disconnected');
+                    this.updateStatus(2, 'Desconectado', 'status-disconnected');
                     this.ui.connectBtnP2.textContent = 'CONECTAR JOGADOR 2';
                 }
             }
-            
-        // Versão correta da calibração (CORRIGIDA)
-            startCalibration() {
-                this.isCalibrating = true;
-                // Inicia os valores "invertidos" para forçar a primeira leitura a defini-los
-                this.potMin = 1023; 
-                this.potMax = 0;
-                this.updateStatus(1, 'Calibrando P1... Gire!', 'status-calibrating');
-                this.playerY = (this.canvas.height - this.PADDLE_HEIGHT) / 2;
-                this.playerTargetY = this.playerY;
 
-                setTimeout(() => {
-                    this.isCalibrating = false;
-
-                    // --- INÍCIO DA CORREÇÃO DEFINITIVA ---
-                    let range = this.potMax - this.potMin;
-
-                    // Se o range for inválido (menor que 50)
-                    if (range < 50) {
-                        console.log(`Calibração P1 falhou. Range detectado: ${range}.`);
-                        
-                        // O joystick foi movido só para cima? (Min é válido, Max não)
-                        if (this.potMin < 1000 && this.potMax <= 0) {
-                            console.log('...Falha: Apenas o MÍNIMO foi detectado. Assumindo Max = 1023.');
-                            // Mantém o potMin encontrado, assume Max = 1023
-                            this.potMax = 1023; 
-                        }
-                        // O joystick foi movido só para baixo? (Max é válido, Min não)
-                        else if (this.potMax > 50 && this.potMin >= 1023) {
-                            console.log('...Falha: Apenas o MÁXIMO foi detectado. Assumindo Min = 0.');
-                            // Mantém o potMax encontrado, assume Min = 0
-                            this.potMin = 0; 
-                        }
-                        // O joystick não foi movido
-                        else {
-                            console.log('...Falha: Nenhum movimento. Assumindo [0, 1023].');
-                            this.potMin = 0;
-                            this.potMax = 1023;
-                        }
-                    } else {
-                        console.log(`Calibração P1 finalizada. Mín: ${this.potMin}, Máx: ${this.potMax}`);
-                    }
-                    // --- FIM DA CORREÇÃO DEFINITIVA ---
-
-                    this.updateStatus(1, 'P1: Conectado', 'status-connected');
-                    this.ui.connectBtnP1.textContent = 'DESCONECTAR P1';
-                }, 5000); // 5 segundos de calibração
-            }
-
-           async startReading(playerNum) {
+            async startReading(playerNum) {
                 const decoder = new TextDecoder();
                 
-                // O loop agora checa a propriedade da classe (this.portP1)
-                // em vez de uma variável local. Isso é a chave da correção.
                 while ((playerNum === 1 && this.portP1?.readable) || (playerNum === 2 && this.portP2?.readable)) {
-                    
-                    // Pega a porta e o leitor corretos
                     let port = (playerNum === 1) ? this.portP1 : this.portP2;
                     let reader = port.readable.getReader();
                     
@@ -396,40 +606,28 @@
                         while (true) {
                             const { value, done } = await reader.read();
                             
-                            // Quando disconnectArduino() chama reader.cancel(),
-                            // 'done' se torna 'true' e o loop quebra.
-                            if (done) {
-                                break; // Sai do loop de leitura interno
-                            }
+                            if (done) break;
                             
                             partialData += decoder.decode(value, { stream: true });
                             let newlineIndex;
                             while ((newlineIndex = partialData.indexOf('\n')) !== -1) {
                                 const line = partialData.substring(0, newlineIndex).trim();
                                 partialData = partialData.substring(newlineIndex + 1);
-                                if (line) this.processArduinoData(line);
+                                if (line) this.processArduinoData(line, playerNum);
                             }
                         }
                     } catch (error) { 
-                        // Isso é normal acontecer ao desconectar (ex: "NetworkError")
-                        // O importante é que o catch impede o crash.
-                        console.log(`Porta ${playerNum} fechada ou com erro:`, error.message);
+                        console.log(`Porta ${playerNum} fechada:`, error.message);
                     } 
                     finally { 
-                        // Libera o leitor para a porta ser fechada
                         reader.releaseLock(); 
                     }
-
-                    // O loop interno quebrou (seja por 'done' or 'error').
-                    // O loop 'while' externo vai agora re-checar a condição.
-                    // Como o disconnectArduino() vai ter setado 'this.portP1 = null',
-                    // a condição 'this.portP1?.readable' será 'undefined' (falso),
-                    // e este loop 'startReading' vai terminar limpo.
                 }
             }
-            // Versão correta do processamento (sem inversão)
-            processArduinoData(line) {
-                if (line.startsWith('P1:')) {
+
+            // PROCESSAMENTO CORRIGIDO COM CALIBRAÇÃO SEPARADA
+            processArduinoData(line, playerNum) {
+                if (line.startsWith('P1:') && playerNum === 1) {
                     const potValue = parseInt(line.substring(3));
                     if (isNaN(potValue)) return;
 
@@ -438,34 +636,38 @@
                         if (potValue > this.potMax) this.potMax = potValue;
                     } else {
                         const paddleMaxY = this.canvas.height - this.PADDLE_HEIGHT;
-                        // Mapeamento direto (corrigido)
+                        // MAPEAMENTO CORRETO PARA TODO O CAMPO
                         this.playerTargetY = this.mapValue(potValue, this.potMin, this.potMax, 0, paddleMaxY);
                     }
                 }
-                
-                // Lógica para P2
-                else if (line.startsWith('P2:')) {
+                else if (line.startsWith('P2:') && playerNum === 2) {
                     const potValue = parseInt(line.substring(3));
                     if (isNaN(potValue)) return;
                     
-                    if (!this.isCalibrating) {
-                         const paddleMaxY = this.canvas.height - this.PADDLE_HEIGHT;
-                        // Mapeamento direto (corrigido)
-                        this.cpuTargetY = this.mapValue(potValue, this.potMin, this.potMax, 0, paddleMaxY);
+                    // Calibração separada para P2
+                    if (this.ui.statusIndicatorP2.classList.contains('status-calibrating')) {
+                        if (potValue < this.potMinP2) this.potMinP2 = potValue;
+                        if (potValue > this.potMaxP2) this.potMaxP2 = potValue;
+                    } else {
+                        const paddleMaxY = this.canvas.height - this.PADDLE_HEIGHT;
+                        this.cpuTargetY = this.mapValue(potValue, this.potMinP2, this.potMaxP2, 0, paddleMaxY);
                     }
                 }
-                
-                // Botão de P1 controla o jogo
-                else if (line === 'BTN:1') {
+                else if (line === 'BTN:1' && playerNum === 1) {
                     if (this.gameOver) this.resetGame();
                     else if (!this.gameRunning) this.startGame();
                 }
             }
 
+            // FUNÇÃO DE MAPEAMENTO MELHORADA
             mapValue(value, inMin, inMax, outMin, outMax) {
-                const divisor = inMax - inMin;
-                if (divisor === 0) return (outMin + outMax) / 2; 
-                const mappedValue = (value - inMin) * (outMax - outMin) / divisor + outMin;
+                // Garante que os valores de entrada são válidos
+                if (inMax === inMin) return (outMin + outMax) / 2;
+                
+                // Mapeamento normal
+                let mappedValue = (value - inMin) * (outMax - outMin) / (inMax - inMin) + outMin;
+                
+                // Limita aos valores de saída
                 return Math.max(outMin, Math.min(mappedValue, outMax));
             }
             
@@ -476,24 +678,6 @@
                 } else {
                     this.ui.statusTextP2.textContent = `P2: ${message}`;
                     this.ui.statusIndicatorP2.className = `status-indicator ${cssClass}`;
-                }
-            }
-              updateStatus(playerNum, message, cssClass) {
-                // ... (código da função)
-            }
-
-            // 5. ADICIONE ESTA FUNÇÃO INTEIRA
-            toggleMute() {
-                if (this.ui.backgroundMusic.muted) {
-                    // Desmutar
-                    this.ui.backgroundMusic.muted = false;
-                    this.ui.muteBtn.textContent = 'SOM: ON';
-                    this.ui.muteBtn.classList.remove('muted');
-                } else {
-                    // Mutar
-                    this.ui.backgroundMusic.muted = true;
-                    this.ui.muteBtn.textContent = 'SOM: OFF';
-                    this.ui.muteBtn.classList.add('muted');
                 }
             }
 
@@ -509,7 +693,7 @@
 
                 if (!this.gameRunning) return;
 
-                // Movimento Bola
+                // Movimento Bola (VELOCIDADE REDUZIDA)
                 this.ballX += this.ballSpeedX;
                 this.ballY += this.ballSpeedY;
 
@@ -524,13 +708,15 @@
 
                 // Pontuação
                 if (this.ballX - this.BALL_RADIUS < 0) {
-                    this.cpuScore++; this.updateScoreDisplay();
+                    this.cpuScore++; 
+                    this.updateScoreDisplay();
                     if (this.cpuScore >= this.WINNING_SCORE) this.endGame(this.gameMode === 'cpu' ? 'CPU' : 'JOGADOR 2');
                     else this.resetBall();
                     return;
                 }
                 if (this.ballX + this.BALL_RADIUS > this.canvas.width) {
-                    this.playerScore++; this.updateScoreDisplay();
+                    this.playerScore++; 
+                    this.updateScoreDisplay();
                     if (this.playerScore >= this.WINNING_SCORE) this.endGame('JOGADOR 1');
                     else this.resetBall();
                     return;
@@ -549,21 +735,23 @@
                     hitRegistered = true;
                 }
 
-                // Lógica de aceleração (a cada 4 rebatidas)
+                // Lógica de aceleração
                 if (hitRegistered) {
                     this.hitCounter++; 
                     let speedMultiplier = 1.0; 
-                    if (this.hitCounter % 4 === 0) { // Acelera a cada 4
+                    if (this.hitCounter % 4 === 0) {
                         speedMultiplier = this.BALL_ACCELERATION;
                     }
                     this.ballSpeedX = -this.ballSpeedX * speedMultiplier;
+                    // Adiciona um pouco de variação no ângulo Y para tornar o jogo mais interessante
+                    this.ballSpeedY += (Math.random() - 0.5) * 2;
                 }
 
                 // Movimento CPU / P2
                 if (this.gameMode === 'cpu') {
                     const cpuCenter = this.cpuY + this.PADDLE_HEIGHT / 2;
                     const deadZone = 10;
-                    const cpuSpeed = 5.5; 
+                    const cpuSpeed = 4.5; // REDUZIDO
                     if (cpuCenter < this.ballY - deadZone) this.cpuY += cpuSpeed;
                     else if (cpuCenter > this.ballY + deadZone) this.cpuY -= cpuSpeed;
                 } else { 
@@ -574,14 +762,13 @@
                 this.cpuY = Math.max(0, Math.min(this.canvas.height - this.PADDLE_HEIGHT, this.cpuY));
             }
 
-            // Versão final do Draw (sem brilho na bola)
             draw() {
-                // 1. FUNDO TRANSPARENTE COM EFEITO DE RASTRO (MOTION BLUR)
-                this.ctx.fillStyle = 'rgba(0, 119, 190, 0.25)'; // Cor de água (#0077BE)
+                // FUNDO
+                this.ctx.fillStyle = 'rgba(0, 119, 190, 0.25)';
                 this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-                // 2. DESENHA A "REDE"
-                this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)'; // Rede branca semi-transparente
+                // REDE
+                this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
                 this.ctx.lineWidth = 5;
                 this.ctx.setLineDash([10, 15]);
                 this.ctx.beginPath();
@@ -590,30 +777,30 @@
                 this.ctx.stroke();
                 this.ctx.setLineDash([]);
 
-                // 3. RAQUETES (COM BORDAS BRANCAS)
-                this.ctx.lineWidth = 2; // Largura da borda
+                // RAQUETES
+                this.ctx.lineWidth = 2;
 
                 // Raquete Jogador 1
-                this.ctx.fillStyle = '#00ffff'; // Cor Ciano
+                this.ctx.fillStyle = '#00ffff';
                 this.ctx.fillRect(0, this.playerY, this.PADDLE_WIDTH, this.PADDLE_HEIGHT);
-                this.ctx.strokeStyle = '#FFFFFF'; // Borda branca
+                this.ctx.strokeStyle = '#FFFFFF';
                 this.ctx.strokeRect(0, this.playerY, this.PADDLE_WIDTH, this.PADDLE_HEIGHT);
                 
-                // Raquete Direita (CPU ou P2)
-                this.ctx.fillStyle = (this.gameMode === 'cpu') ? '#ff00ff' : '#00ff00'; // Cor Magenta ou Verde
+                // Raquete Direita
+                this.ctx.fillStyle = (this.gameMode === 'cpu') ? '#ff00ff' : '#00ff00';
                 this.ctx.fillRect(this.canvas.width - this.PADDLE_WIDTH, this.cpuY, this.PADDLE_WIDTH, this.PADDLE_HEIGHT);
-                this.ctx.strokeStyle = '#FFFFFF'; // Borda branca
+                this.ctx.strokeStyle = '#FFFFFF';
                 this.ctx.strokeRect(this.canvas.width - this.PADDLE_WIDTH, this.cpuY, this.PADDLE_WIDTH, this.PADDLE_HEIGHT);
                 
-                // 4. BOLA (LARANJA NORMAL)
+                // BOLA
                 if (this.gameRunning || this.gameOver) {
-                    this.ctx.fillStyle = '#ff8c00'; // <-- COR LARANJA!
+                    this.ctx.fillStyle = '#ff8c00';
                     this.ctx.beginPath();
                     this.ctx.arc(this.ballX, this.ballY, this.BALL_RADIUS, 0, Math.PI * 2);
                     this.ctx.fill();
                 }
                 
-                // 5. TEXTOS (PONTUAÇÃO, PAUSE, ETC)
+                // TEXTOS
                 const centerX = this.canvas.width / 2;
                 const centerY = this.canvas.height / 2;
                 this.ctx.textAlign = 'center';
