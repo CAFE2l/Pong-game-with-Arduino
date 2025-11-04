@@ -8,9 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     
-    <link rel="stylesheet" href="style.css">
-
-</head>
+    <link rel="stylesheet" href="style.css"> </head>
 <body>
     <div class="container">
         <h1>Gira Pong</h1>
@@ -19,13 +17,13 @@
             <div class="game-area">
                 <canvas id="gameCanvas" width="1000" height="600"></canvas>
                  <div class="score-board">
-                     <div class="score">
-                         <div class="score-label">JOGADOR 1</div> <div id="playerScore" class="score-value">0</div>
-                     </div>
-                     <div class="score">
-                         <div id="cpuScoreLabel" class="score-label">CPU</div> 
-                         <div id="cpuScore" class="score-value">0</div>
-                     </div>
+                      <div class="score">
+                           <div class="score-label">JOGADOR 1</div> <div id="playerScore" class="score-value">0</div>
+                      </div>
+                      <div class="score">
+                           <div id="cpuScoreLabel" class="score-label">CPU</div> 
+                           <div id="cpuScore" class="score-value">0</div>
+                      </div>
                  </div>
             </div>
 
@@ -54,8 +52,7 @@
                     <button id="startBtn">INICIAR JOGO</button>
                     <button id="pauseBtn" disabled>PAUSAR</button>
                     <button id="resetBtn">NOVO JOGO</button>
-                    <div class="panel-section">
-                  
+                </div>
 
                 <div class="panel-section">
                     <h2>AUDIO</h2>
@@ -65,15 +62,11 @@
             </div>
         </div>
     </div>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <audio id="background-music" src="sua-musica-aqui.mp3" loop></audio>
 
+    <script>
     
-<script>
     class PongGame {
         constructor(canvasId) {
             this.canvas = document.getElementById(canvasId);
@@ -85,12 +78,12 @@
             this.PADDLE_HEIGHT = 130;
             this.BALL_RADIUS = 10;
             this.WINNING_SCORE = 3;
-            this.PADDLE_SMOOTHING = 0.12; // Raquetes mais lentas
-            this.INITIAL_BALL_SPEED = 7; // Velocidade inicial
-            this.BALL_ACCELERATION = 1.05; // Aceleração suave
+            this.PADDLE_SMOOTHING = 0.12; 
+            this.INITIAL_BALL_SPEED = 7; 
+            this.BALL_ACCELERATION = 1.05; 
 
             // --- ESTADO DO JOGO ---
-            this.hitCounter = 0; // Contador de rebatidas
+            this.hitCounter = 0; 
             this.playerY = (this.canvas.height - this.PADDLE_HEIGHT) / 2;
             this.playerTargetY = this.playerY; 
             this.cpuY = (this.canvas.height - this.PADDLE_HEIGHT) / 2;
@@ -176,7 +169,9 @@
         }
 
         handleMouseMovement(event) {
+            // Se o P2 estiver conectado, o mouse não controla
             if (this.gameMode !== 'player2' || this.portP2) return;
+            
             const rect = this.canvas.getBoundingClientRect();
             const scaleY = this.canvas.height / rect.height;
             const mouseY = (event.clientY - rect.top) * scaleY;
@@ -213,7 +208,7 @@
             this.ui.pauseBtn.textContent = 'PAUSAR';
             this.ui.modeCpuBtn.disabled = false; 
             this.ui.modeP2Btn.disabled = false;
-            this.hitCounter = 0; // Reseta o contador
+            this.hitCounter = 0;
             this.playerY = (this.canvas.height - this.PADDLE_HEIGHT) / 2;
             this.playerTargetY = this.playerY; 
             this.cpuY = (this.canvas.height - this.PADDLE_HEIGHT) / 2;
@@ -319,10 +314,8 @@
             }
         }
         
-        // Versão correta da calibração (CORRIGIDA)
         startCalibration() {
             this.isCalibrating = true;
-            // Inicia os valores "invertidos" para forçar a primeira leitura a defini-los
             this.potMin = 1023; 
             this.potMax = 0;
             this.updateStatus(1, 'Calibrando P1... Gire!', 'status-calibrating');
@@ -331,27 +324,18 @@
 
             setTimeout(() => {
                 this.isCalibrating = false;
-
-                // --- INÍCIO DA CORREÇÃO DEFINITIVA ---
                 let range = this.potMax - this.potMin;
 
-                // Se o range for inválido (menor que 50)
                 if (range < 50) {
                     console.log(`Calibração P1 falhou. Range detectado: ${range}.`);
-                    
-                    // O joystick foi movido só para cima? (Min é válido, Max não)
                     if (this.potMin < 1000 && this.potMax <= 0) {
                         console.log('...Falha: Apenas o MÍNIMO foi detectado. Assumindo Max = 1023.');
-                        // Mantém o potMin encontrado, assume Max = 1023
                         this.potMax = 1023; 
                     }
-                    // O joystick foi movido só para baixo? (Max é válido, Min não)
                     else if (this.potMax > 50 && this.potMin >= 1023) {
                         console.log('...Falha: Apenas o MÁXIMO foi detectado. Assumindo Min = 0.');
-                        // Mantém o potMax encontrado, assume Min = 0
                         this.potMin = 0; 
                     }
-                    // O joystick não foi movido
                     else {
                         console.log('...Falha: Nenhum movimento. Assumindo [0, 1023].');
                         this.potMin = 0;
@@ -360,18 +344,15 @@
                 } else {
                     console.log(`Calibração P1 finalizada. Mín: ${this.potMin}, Máx: ${this.potMax}`);
                 }
-                // --- FIM DA CORREÇÃO DEFINITIVA ---
-
                 this.updateStatus(1, 'P1: Conectado', 'status-connected');
                 this.ui.connectBtnP1.textContent = 'DESCONECTAR P1';
-            }, 5000); // 5 segundos de calibração
+            }, 5000); 
         }
 
        async startReading(playerNum) {
             const decoder = new TextDecoder();
             
             while ((playerNum === 1 && this.portP1?.readable) || (playerNum === 2 && this.portP2?.readable)) {
-                
                 let port = (playerNum === 1) ? this.portP1 : this.portP2;
                 let reader = port.readable.getReader();
                 
@@ -382,10 +363,7 @@
                     let partialData = ''; 
                     while (true) {
                         const { value, done } = await reader.read();
-                        
-                        if (done) {
-                            break; // Sai do loop de leitura interno
-                        }
+                        if (done) break; 
                         
                         partialData += decoder.decode(value, { stream: true });
                         let newlineIndex;
@@ -404,7 +382,6 @@
             }
         }
 
-        // Versão correta do processamento (sem inversão)
         processArduinoData(line) {
             if (line.startsWith('P1:')) {
                 const potValue = parseInt(line.substring(3));
@@ -415,33 +392,27 @@
                     if (potValue > this.potMax) this.potMax = potValue;
                 } else {
                     const paddleMaxY = this.canvas.height - this.PADDLE_HEIGHT;
-                    // Mapeamento direto (corrigido)
                     this.playerTargetY = this.mapValue(potValue, this.potMin, this.potMax, 0, paddleMaxY);
                 }
             }
             
-            // Lógica para P2
             else if (line.startsWith('P2:')) {
                 const potValue = parseInt(line.substring(3));
                 if (isNaN(potValue)) return;
                 
                 if (!this.isCalibrating) {
-                        const paddleMaxY = this.canvas.height - this.PADDLE_HEIGHT;
-                    // Mapeamento direto (corrigido)
-                    // USA O MESMO potMin/potMax do P1, que foi calibrado
+                    const paddleMaxY = this.canvas.height - this.PADDLE_HEIGHT;
                     this.cpuTargetY = this.mapValue(potValue, this.potMin, this.potMax, 0, paddleMaxY);
                 }
             }
             
-            // Botão de P1 controla o jogo
             else if (line === 'BTN:1') {
                 if (this.gameOver) this.resetGame();
                 else if (!this.gameRunning) this.startGame();
             }
         }
-
         mapValue(value, inMin, inMax, outMin, outMax) {
-            const divisor = inMax - inMin;
+            const divisor = inMax - inMin; // <-- CORRIGIDO!
             if (divisor === 0) return (outMin + outMax) / 2; 
             const mappedValue = (value - inMin) * (outMax - outMin) / divisor + outMin;
             return Math.max(outMin, Math.min(mappedValue, outMax));
@@ -457,15 +428,12 @@
             }
         }
 
-        // 5. ESTA É A VERSÃO CORRETA DA FUNÇÃO (a outra foi removida)
         toggleMute() {
             if (this.ui.backgroundMusic.muted) {
-                // Desmutar
                 this.ui.backgroundMusic.muted = false;
                 this.ui.muteBtn.textContent = 'SOM: ON';
                 this.ui.muteBtn.classList.remove('muted');
             } else {
-                // Mutar
                 this.ui.backgroundMusic.muted = true;
                 this.ui.muteBtn.textContent = 'SOM: OFF';
                 this.ui.muteBtn.classList.add('muted');
@@ -476,13 +444,45 @@
         update() {
             if (this.isPaused || this.gameOver) return;
 
+            // --- CORREÇÃO IMPORTANTE ---
+            // A lógica de movimento das raquetes agora está ANTES
+            // da checagem "if (!this.gameRunning) return;"
+            // Isso permite que as raquetes se movam para teste
+            // mesmo antes de apertar "INICIAR JOGO".
+
             // Movimento P1
             let distance = this.playerTargetY - this.playerY;
             if (Math.abs(distance) < 1) this.playerY = this.playerTargetY;
             else this.playerY += distance * this.PADDLE_SMOOTHING;
             this.playerY = Math.max(0, Math.min(this.canvas.height - this.PADDLE_HEIGHT, this.playerY));
 
+            // Movimento CPU / P2
+            if (this.gameMode === 'cpu') {
+                // A CPU só se move se o jogo estiver rodando (veja abaixo)
+            } else { 
+                // P2 (controlado pelo Arduino 2 ou Mouse) se move
+                distance = this.cpuTargetY - this.cpuY;
+                if (Math.abs(distance) < 1) this.cpuY = this.cpuTargetY;
+                else this.cpuY += distance * this.PADDLE_SMOOTHING;
+            }
+            this.cpuY = Math.max(0, Math.min(this.canvas.height - this.PADDLE_HEIGHT, this.cpuY));
+
+
+            // A bola e a IA da CPU só se movem se o jogo estiver rodando
             if (!this.gameRunning) return;
+
+            // Movimento da IA (CPU) - (só se move no modo CPU e se o jogo estiver rodando)
+            if (this.gameMode === 'cpu') {
+                const cpuCenter = this.cpuY + this.PADDLE_HEIGHT / 2;
+                const deadZone = 10;
+                const cpuSpeed = 5.5; 
+                if (cpuCenter < this.ballY - deadZone) this.cpuY += cpuSpeed;
+                else if (cpuCenter > this.ballY + deadZone) this.cpuY -= cpuSpeed;
+                
+                // Limita a posição da CPU (precisa estar aqui tbm)
+                this.cpuY = Math.max(0, Math.min(this.canvas.height - this.PADDLE_HEIGHT, this.cpuY));
+            }
+
 
             // Movimento Bola
             this.ballX += this.ballSpeedX;
@@ -524,39 +524,21 @@
                 hitRegistered = true;
             }
 
-            // Lógica de aceleração (a cada 4 rebatidas)
             if (hitRegistered) {
                 this.hitCounter++; 
                 let speedMultiplier = 1.0; 
-                if (this.hitCounter % 4 === 0) { // Acelera a cada 4
+                if (this.hitCounter % 4 === 0) {
                     speedMultiplier = this.BALL_ACCELERATION;
                 }
                 this.ballSpeedX = -this.ballSpeedX * speedMultiplier;
             }
-
-            // Movimento CPU / P2
-            if (this.gameMode === 'cpu') {
-                const cpuCenter = this.cpuY + this.PADDLE_HEIGHT / 2;
-                const deadZone = 10;
-                const cpuSpeed = 5.5; 
-                if (cpuCenter < this.ballY - deadZone) this.cpuY += cpuSpeed;
-                else if (cpuCenter > this.ballY + deadZone) this.cpuY -= cpuSpeed;
-            } else { 
-                distance = this.cpuTargetY - this.cpuY;
-                if (Math.abs(distance) < 1) this.cpuY = this.cpuTargetY;
-                else this.cpuY += distance * this.PADDLE_SMOOTHING;
-            }
-            this.cpuY = Math.max(0, Math.min(this.canvas.height - this.PADDLE_HEIGHT, this.cpuY));
         }
 
-        // Versão final do Draw (sem brilho na bola)
         draw() {
-            // 1. FUNDO TRANSPARENTE COM EFEITO DE RASTRO (MOTION BLUR)
-            this.ctx.fillStyle = 'rgba(0, 119, 190, 0.25)'; // Cor de água (#0077BE)
+            this.ctx.fillStyle = 'rgba(0, 119, 190, 0.25)';
             this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-            // 2. DESENHA A "REDE"
-            this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)'; // Rede branca semi-transparente
+            this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
             this.ctx.lineWidth = 5;
             this.ctx.setLineDash([10, 15]);
             this.ctx.beginPath();
@@ -565,30 +547,25 @@
             this.ctx.stroke();
             this.ctx.setLineDash([]);
 
-            // 3. RAQUETES (COM BORDAS BRANCAS)
-            this.ctx.lineWidth = 2; // Largura da borda
+            this.ctx.lineWidth = 2; 
 
-            // Raquete Jogador 1
-            this.ctx.fillStyle = '#00ffff'; // Cor Ciano
+            this.ctx.fillStyle = '#00ffff'; 
             this.ctx.fillRect(0, this.playerY, this.PADDLE_WIDTH, this.PADDLE_HEIGHT);
-            this.ctx.strokeStyle = '#FFFFFF'; // Borda branca
+            this.ctx.strokeStyle = '#FFFFFF';
             this.ctx.strokeRect(0, this.playerY, this.PADDLE_WIDTH, this.PADDLE_HEIGHT);
             
-            // Raquete Direita (CPU ou P2)
-            this.ctx.fillStyle = (this.gameMode === 'cpu') ? '#ff00ff' : '#00ff00'; // Cor Magenta ou Verde
+            this.ctx.fillStyle = (this.gameMode === 'cpu') ? '#ff00ff' : '#00ff00';
             this.ctx.fillRect(this.canvas.width - this.PADDLE_WIDTH, this.cpuY, this.PADDLE_WIDTH, this.PADDLE_HEIGHT);
-            this.ctx.strokeStyle = '#FFFFFF'; // Borda branca
+            this.ctx.strokeStyle = '#FFFFFF';
             this.ctx.strokeRect(this.canvas.width - this.PADDLE_WIDTH, this.cpuY, this.PADDLE_WIDTH, this.PADDLE_HEIGHT);
             
-            // 4. BOLA (LARANJA NORMAL)
             if (this.gameRunning || this.gameOver) {
-                this.ctx.fillStyle = '#ff8c00'; // <-- COR LARANJA!
+                this.ctx.fillStyle = '#ff8c00';
                 this.ctx.beginPath();
                 this.ctx.arc(this.ballX, this.ballY, this.BALL_RADIUS, 0, Math.PI * 2);
                 this.ctx.fill();
             }
             
-            // 5. TEXTOS (PONTUAÇÃO, PAUSE, ETC)
             const centerX = this.canvas.width / 2;
             const centerY = this.canvas.height / 2;
             this.ctx.textAlign = 'center';
@@ -620,7 +597,7 @@
     window.addEventListener('DOMContentLoaded', () => {
         new PongGame('gameCanvas');
     });
-</script>
+
+    </script>
 </body>
 </html>
-
