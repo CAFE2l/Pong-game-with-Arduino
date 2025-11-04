@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gira Pong</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+       body {
+        background: url('https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fi.pinimg.com%2Foriginals%2F58%2F14%2F35%2F5814357e8b8efa3e9c5c58eb4bb4a926.jpg&f=1&nofb=1&ipt=49dfa5068ea3ef50cb708da06e8c22854d3a4d62b3140a50b2ab68132d23adb9') no-repeat center center fixed;
+        background-size: cover;
+        color: white;
+        font-family: 'Press Start 2P', cursive;
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+}
+
+        .container {
+            max-width: 1400px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #00ffff;
+            text-shadow: 0 0 10px #00ffff;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+        }
+
+        .main-content {
+            display: flex;
+            gap: 30px;
+            align-items: flex-start;
+        }
+
+        .game-area {
+            flex: 1;
+            position: relative;
+        }
+
+        #gameCanvas {
+            border: 3px solid #00ffff;
+            border-radius: 10px;
+            background: rgba(0, 119, 190, 0.1);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+            display: block;
+        }
+
+        .score-board {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 15px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #00ffff;
+        }
+
+        .score {
+            text-align: center;
+        }
+
+        .score-label {
+            font-size: 0.8em;
+            color: #ccc;
+            margin-bottom: 5px;
+        }
+
+        .score-value {
+            font-size: 2em;
+            color: #00ff00;
+            text-shadow: 0 0 10px #00ff00;
+        }
+
+        .panel {
+            width: 300px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #ff00ff;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 20px rgba(255, 0, 255, 0.3);
+        }
+
+        .panel-section {
+            margin-bottom: 25px;
+        }
+
+        .panel-section h2 {
+            color: #ff00ff;
+            font-size: 0.9em;
+            margin-bottom: 15px;
+            text-align: center;
+            text-shadow: 0 0 5px #ff00ff;
+        }
+
+        .status-box {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 12px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            font-size: 0.7em;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-left: 10px;
+        }
+
+        .status-connected {
+            background: #00ff00;
+            box-shadow: 0 0 10px #00ff00;
+        }
+
+        .status-disconnected {
+            background: #ff4444;
+            box-shadow: 0 0 10px #ff4444;
+        }
+
+        .status-calibrating {
+            background: #ffff00;
+            box-shadow: 0 0 10px #ffff00;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #ff00ff, #00ffff);
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.7em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 0, 255, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .mode-select {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 10px;
+            font-size: 0.6em;
+        }
+
+        .mode-btn.active {
+            background: linear-gradient(45deg, #00ff00, #00ffff);
+            box-shadow: 0 0 10px #00ff00;
+        }
+
+        .muted {
+            background: linear-gradient(45deg, #ff4444, #ff6666) !important;
+        }
+
+        @media (max-width: 1200px) {
+            .main-content {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .panel {
+                width: 100%;
+                max-width: 500px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>GIRA PONG</h1>
+        
+        <div class="main-content">
+            <div class="game-area">
+                <canvas id="gameCanvas" width="1000" height="600"></canvas>
+                 <div class="score-board">
+                     <div class="score">
+                         <div class="score-label">JOGADOR 1</div> 
+                         <div id="playerScore" class="score-value">0</div>
+                     </div>
+                     <div class="score">
+                         <div id="cpuScoreLabel" class="score-label">CPU</div> 
+                         <div id="cpuScore" class="score-value">0</div>
+                     </div>
+                 </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-section">
+                    <h2>CONEXÃO</h2>
+                    <div class="status-box">
+                        <span id="statusTextP1">P1: Desconectado</span>
+                        <div id="statusIndicatorP1" class="status-indicator status-disconnected"></div>
+                    </div>
+                    <button id="connectBtnP1">CONECTAR JOGADOR 1</button>
+                    
+                    <div class="status-box" style="margin-top: 10px;">
+                        <span id="statusTextP2">P2: Desconectado</span>
+                        <div id="statusIndicatorP2" class="status-indicator status-disconnected"></div>
+                    </div>
+                    <button id="connectBtnP2">CONECTAR JOGADOR 2</button>
+                </div>
+
+                <div class="panel-section">
+                    <h2>JOGO</h2>
+                    <div class="mode-select">
+                        <button id="modeCpuBtn" class="mode-btn active">1 VS CPU</button>
+                        <button id="modeP2Btn" class="mode-btn">1 VS 1</button>
+                    </div>
+                    <button id="startBtn">INICIAR JOGO</button>
+                    <button id="pauseBtn" disabled>PAUSAR</button>
+                    <button id="resetBtn">NOVO JOGO</button>
+                </div>
+
+                <div class="panel-section">
+                    <h2>AUDIO</h2>
+                    <button id="muteBtn">SOM: ON</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <audio id="background-music" src="./music/heaven-garden-pixel-gun-3d-soundtrack-128-ytshorts.savetube.me.mp3" loop></audio>
+
+    <script>
+        class PongGame {
+            constructor(canvasId) {
+                this.canvas = document.getElementById(canvasId);
+                this.ctx = this.canvas.getContext('2d');
+
+                // --- CONSTANTES DO JOGO (AJUSTADAS) ---
+                this.PADDLE_WIDTH = 15;
+                this.PADDLE_HEIGHT = 150;
+                this.BALL_RADIUS = 10;
+                this.WINNING_SCORE = 3;
+                // **FIX 3: Aumentado para maior responsividade**
+                this.PADDLE_SMOOTHING = 0.25; // Original: 0.12
+                this.INITIAL_BALL_SPEED = 4;
+                this.BALL_ACCELERATION = 1.05;
+                // **FIX 2: Atraso para saque (em ms)**
+                this.SERVE_DELAY = 1000; // 1 segundo
+
+                // --- ESTADO DO JOGO ---
+                this.hitCounter = 0;
+                this.playerY = (this.canvas.height - this.PADDLE_HEIGHT) / 2;
+                this.playerTargetY = this.playerY; 
+                this.cpuY = (this.canvas.height - this.PADDLE_HEIGHT) / 2;
+                this.cpuTargetY = this.cpuY; 
+                this.playerScore = 0;
+                this.cpuScore = 0;
+                this.gameRunning = false;
+                this.isPaused = false;
+                this.gameOver = false;
+                this.winnerText = '';
+                this.gameMode = 'cpu';
+                
+                this.ballX = 0;
+                this.ballY = 0;
+                this.ballSpeedX = 0;
+                this.ballSpeedY = 0;
+
+                // --- CONEXÃO ---
+                this.portP1 = null;
+                this.readerP1 = null;
+                this.portP2 = null;
+                this.readerP2 = null;
+                this.isCalibratingP1 = false;
+                this.isCalibratingP2 = false;
+                this.potMin = 1023;
+                this.potMax = 0;
+                this.potMinP2 = 1023;
+                this.potMaxP2 = 0;
+
+                // --- ELEMENTOS DA UI ---
+                this.ui = {
+                    connectBtnP1: document.getElementById('connectBtnP1'),
+                    connectBtnP2: document.getElementById('connectBtnP2'),
+                    statusTextP1: document.getElementById('statusTextP1'),
+                    statusIndicatorP1: document.getElementById('statusIndicatorP1'),
+                    statusTextP2: document.getElementById('statusTextP2'),
+                    statusIndicatorP2: document.getElementById('statusIndicatorP2'),
+                    startBtn: document.getElementById('startBtn'),
+                    pauseBtn: document.getElementById('pauseBtn'),
+                    resetBtn: document.getElementById('resetBtn'),
+                    playerScoreDisplay: document.getElementById('playerScore'),
+                    cpuScoreDisplay: document.getElementById('cpuScore'),
+                    modeCpuBtn: document.getElementById('modeCpuBtn'),
+                    modeP2Btn: document.getElementById('modeP2Btn'),
+                    cpuScoreLabel: document.getElementById('cpuScoreLabel'),
+                    backgroundMusic: document.getElementById('background-music'),
+                    muteBtn: document.getElementById('muteBtn')
+                };
+
+                this.init();
+            }
+
+            init() {
+                this.initEventListeners();
+                this.resetBall(true); // Inicia com a bola parada
+                this.gameLoop();
+            }
+
+            initEventListeners() {
+                this.ui.connectBtnP1.addEventListener('click', () => this.toggleArduinoConnection(1));
+                this.ui.connectBtnP2.addEventListener('click', () => this.toggleArduinoConnection(2));
+                this.ui.startBtn.addEventListener('click', () => this.startGame());
+                this.ui.pauseBtn.addEventListener('click', () => this.togglePause());
+                this.ui.resetBtn.addEventListener('click', () => this.resetGame());
+                this.ui.modeCpuBtn.addEventListener('click', () => this.setGameMode('cpu'));
+                this.ui.modeP2Btn.addEventListener('click', () => this.setGameMode('player2'));
+                this.canvas.addEventListener('mousemove', (e) => this.handleMouseMovement(e));
+                this.ui.muteBtn.addEventListener('click', () => this.toggleMute());
+            }
+
+            toggleMute() {
+                this.ui.backgroundMusic.muted = !this.ui.backgroundMusic.muted;
+                this.ui.muteBtn.textContent = this.ui.backgroundMusic.muted ? 'SOM: OFF' : 'SOM: ON';
+                this.ui.muteBtn.classList.toggle('muted', this.ui.backgroundMusic.muted);
+            }
+
+            // --- LÓGICA DO JOGO ---
+            
+            setGameMode(mode) {
+                if (this.gameRunning) return; 
+                this.gameMode = mode;
+                if (mode === 'cpu') {
+                    this.ui.modeCpuBtn.classList.add('active');
+                    this.ui.modeP2Btn.classList.remove('active');
+                    this.ui.cpuScoreLabel.textContent = 'CPU';
+                } else {
+                    this.ui.modeCpuBtn.classList.remove('active');
+                    this.ui.modeP2Btn.classList.add('active');
+                    this.ui.cpuScoreLabel.textContent = 'JOGADOR 2';
+                }
+                this.resetGame(); 
+            }
+
+            handleMouseMovement(event) {
+                // Permite o movimento do mouse para P2 se o P2 não estiver conectado
+                if (this.gameMode !== 'player2' || this.portP2) return;
+                const rect = this.canvas.getBoundingClientRect();
+                const scaleY = this.canvas.height / rect.height;
+                const mouseY = (event.clientY - rect.top) * scaleY;
+                this.cpuTargetY = mouseY - this.PADDLE_HEIGHT / 2;
+            }
+
+            // **FIX 2: Modificado para não sacar a bola imediatamente**
+            startGame() {
+                if (this.gameRunning || this.gameOver) return;
+                this.gameRunning = true;
+                this.isPaused = false;
+                this.ui.pauseBtn.disabled = false;
+                this.ui.pauseBtn.textContent = 'PAUSAR';
+                this.ui.modeCpuBtn.disabled = true; 
+                this.ui.modeP2Btn.disabled = true;
+                
+                this.resetBall(false); // Coloca a bola no centro, parada
+
+                // Inicia a bola após um breve atraso
+                setTimeout(() => {
+                    // Checa se o jogo ainda está rodando e não foi pausado/resetado
+                    if (this.gameRunning && !this.isPaused) { 
+                        this.serveBall(); 
+                    }
+                }, this.SERVE_DELAY); 
+                
+                this.ui.backgroundMusic.play();
+            }
+            
+            togglePause() {
+                if (!this.gameRunning || this.gameOver) return;
+                this.isPaused = !this.isPaused;
+                this.ui.pauseBtn.textContent = this.isPaused ? 'RETOMAR' : 'PAUSAR';
+            }
+
+            resetGame() {
+                this.playerScore = 0;
+                this.cpuScore = 0;
+                this.updateScoreDisplay();
+                this.gameRunning = false;
+                this.isPaused = false;
+                this.gameOver = false;
+                this.winnerText = '';
+                this.ui.pauseBtn.disabled = true;
+                this.ui.pauseBtn.textContent = 'PAUSAR';
+                this.ui.modeCpuBtn.disabled = false; 
+                this.ui.modeP2Btn.disabled = false;
+                this.playerY = (this.canvas.height - this.PADDLE_HEIGHT) / 2;
+                this.playerTargetY = this.playerY; 
+                this.cpuY = (this.canvas.height - this.PADDLE_HEIGHT) / 2;
+                this.cpuTargetY = this.cpuY; 
+                this.resetBall(true); // 'true' força a bola a parar e não sacar
+            }
+
+            endGame(winner) {
+                this.gameOver = true;
+                this.gameRunning = false;
+                let winnerName = winner;
+                if (winner === 'CPU' && this.gameMode === 'player2') {
+                    winnerName = 'JOGADOR 2';
+                }
+                this.winnerText = `${winnerName} VENCEU!`;
+                this.ui.pauseBtn.disabled = true;
+                this.ui.modeCpuBtn.disabled = false;
+                this.ui.modeP2Btn.disabled = false;
+            }
+
+            // **FIX 2: Nova função de saque**
+            serveBall() {
+                this.hitCounter = 0; // Zera o contador de rebatidas a cada saque
+                this.ballSpeedX = (Math.random() > 0.5 ? 1 : -1) * this.INITIAL_BALL_SPEED;
+                this.ballSpeedY = (Math.random() > 0.5 ? 1 : -1) * (Math.random() * 2 + 1);
+            }
+
+            // **FIX 2: Modificado para sacar com atraso após ponto**
+            resetBall(shouldStop = false) {
+                this.ballX = this.canvas.width / 2;
+                this.ballY = this.canvas.height / 2;
+                
+                // Para a bola em todos os casos
+                this.ballSpeedX = 0;
+                this.ballSpeedY = 0;
+
+                // Se for um "ponto marcado" (shouldStop=false) E o jogo estiver rolando,
+                // saca após um atraso.
+                if (!shouldStop && this.gameRunning) {
+                    setTimeout(() => {
+                        if (this.gameRunning && !this.isPaused) {
+                            this.serveBall();
+                        }
+                    }, this.SERVE_DELAY); 
+                }
+            }
+
+            updateScoreDisplay() {
+                this.ui.playerScoreDisplay.textContent = this.playerScore;
+                this.ui.cpuScoreDisplay.textContent = this.cpuScore;
+            }
+
+            // --- LÓGICA DE CONEXÃO ---
+            
+            async toggleArduinoConnection(playerNum) {
+                const port = (playerNum === 1) ? this.portP1 : this.portP2;
+                if (port) await this.disconnectArduino(playerNum);
+                else await this.connectArduino(playerNum);
+            }
+
+            async connectArduino(playerNum) {
+                if (!navigator.serial) {
+                    alert("A Web Serial API não é suportada neste navegador. Use Google Chrome ou Edge.");
+                    return;
+                }
+                try {
+                    if (playerNum === 1) {
+                        this.updateStatus(1, 'Calibrando...', 'status-calibrating');
+                    } else {
+                        this.updateStatus(2, 'Calibrando...', 'status-calibrating');
+                    }
+                    
+                    const port = await navigator.serial.requestPort();
+                    await port.open({ baudRate: 9600 }); // Deve bater com o Serial.begin(9600) do Arduino
+
+                    if (playerNum === 1) {
+                        this.portP1 = port;
+                        this.startCalibration(1);
+                    } else {
+                        this.portP2 = port;
+                        this.startCalibration(2);
+                    }
+                    this.startReading(playerNum);
+                } catch (error) {
+                    console.error(`Erro ao conectar P${playerNum}:`, error);
+                    this.updateStatus(playerNum, 'Erro', 'status-disconnected');
+                }
+            }
+
+            startCalibration(playerNum) {
+                if (playerNum === 1) {
+                    this.isCalibratingP1 = true;
+                    this.potMin = 1023;
+                    this.potMax = 0;
+                    this.updateStatus(1, 'Gire o POT!', 'status-calibrating');
+                    
+                    setTimeout(() => {
+                        this.isCalibratingP1 = false;
+                        this.finalizeCalibration(playerNum);
+                    }, 6000); // 6 segundos para calibrar
+                } else {
+                    this.isCalibratingP2 = true;
+                    this.potMinP2 = 1023;
+                    this.potMaxP2 = 0;
+                    this.updateStatus(2, 'Gire o POT!', 'status-calibrating');
+                    
+                    setTimeout(() => {
+                        this.isCalibratingP2 = false;
+                        this.finalizeCalibration(playerNum);
+                    }, 6000); // 6 segundos para calibrar
+                }
+            }
+
+            // **FIX 1: Lógica de fallback da calibração melhorada**
+            finalizeCalibration(playerNum) {
+                if (playerNum === 1) {
+                    let range = this.potMax - this.potMin;
+                    console.log(`P1 - Range calibrado: ${range}, Min: ${this.potMin}, Max: ${this.potMax}`);
+                    
+                    // Se o range for muito pequeno, assume que o usuário não girou
+                    // e usa o fallback de 0-1023.
+                    if (range < 100) {
+                        console.warn(`Calibração P1 fraca. Range: ${range}. Usando fallback 0-1023.`);
+                        this.potMin = 0;
+                        this.potMax = 1023;
+                    }
+                    
+                    this.updateStatus(1, 'Conectado', 'status-connected');
+                    this.ui.connectBtnP1.textContent = 'DESCONECTAR P1';
+                    console.log(`P1 CALIBRADO - Min: ${this.potMin}, Max: ${this.potMax}, Range: ${this.potMax - this.potMin}`);
+                    
+                } else {
+                    let range = this.potMaxP2 - this.potMinP2;
+                    console.log(`P2 - Range calibrado: ${range}, Min: ${this.potMinP2}, Max: ${this.potMaxP2}`);
+                    
+                    // Lógica de fallback para P2
+                    if (range < 100) {
+                        console.warn(`Calibração P2 fraca. Range: ${range}. Usando fallback 0-1023.`);
+                        this.potMinP2 = 0;
+                        this.potMaxP2 = 1023;
+                    }
+                    
+                    this.updateStatus(2, 'Conectado', 'status-connected');
+                    this.ui.connectBtnP2.textContent = 'DESCONECTAR P2';
+                    console.log(`P2 CALIBRADO - Min: ${this.potMinP2}, Max: ${this.potMaxP2}, Range: ${this.potMaxP2 - this.potMinP2}`);
+                }
+            }
+
+            async disconnectArduino(playerNum) {
+                let port = (playerNum === 1) ? this.portP1 : this.portP2;
+                let reader = (playerNum === 1) ? this.readerP1 : this.readerP2;
+
+                if (reader) {
+                    try { await reader.cancel(); } 
+                    catch (error) { console.warn(`Erro ao cancelar leitor ${playerNum}:`, error.message); }
+                }
+                if (port) {
+                    try { await port.close(); } 
+                    catch (error) { console.warn(`Erro ao fechar porta ${playerNum}:`, error.message); }
+                }
+                
+                if (playerNum === 1) {
+                    this.portP1 = null; 
+                    this.readerP1 = null;
+                    this.isCalibratingP1 = false;
+                    this.updateStatus(1, 'Desconectado', 'status-disconnected');
+                    this.ui.connectBtnP1.textContent = 'CONECTAR JOGADOR 1';
+                } else {
+                    this.portP2 = null; 
+                    this.readerP2 = null;
+                    this.isCalibratingP2 = false;
+                    this.updateStatus(2, 'Desconectado', 'status-disconnected');
+                    this.ui.connectBtnP2.textContent = 'CONECTAR JOGADOR 2';
+                }
+            }
+
+            async startReading(playerNum) {
+                const decoder = new TextDecoder();
+                
+                while ((playerNum === 1 && this.portP1?.readable) || (playerNum === 2 && this.portP2?.readable)) {
+                    let port = (playerNum === 1) ? this.portP1 : this.portP2;
+                    let reader = port.readable.getReader();
+                    
+                    if(playerNum === 1) this.readerP1 = reader;
+                    else this.readerP2 = reader;
+
+                    try {
+                        let partialData = ''; 
+                        while (true) {
+                            const { value, done } = await reader.read();
+                            if (done) break;
+                            
+                            partialData += decoder.decode(value, { stream: true });
+                            let newlineIndex;
+                            while ((newlineIndex = partialData.indexOf('\n')) !== -1) {
+                                const line = partialData.substring(0, newlineIndex).trim();
+                                partialData = partialData.substring(newlineIndex + 1);
+                                if (line) this.processArduinoData(line, playerNum);
+                            }
+                        }
+                    } catch (error) { 
+                        // Ignora erros de "porta fechada"
+                        if (error.message !== "The port is closed.") {
+                            console.log(`Erro na leitura ${playerNum}:`, error.message);
+                        }
+                    } 
+                    finally { 
+                        if (reader) reader.releaseLock(); 
+                    }
+                }
+            }
+
+            // **FIX 4: Removidos console.log de alta frequência para evitar lag**
+            processArduinoData(line, playerNum) {
+                // Este log foi removido pois rodava muito rápido e causava lag:
+                // console.log(`P${playerNum} recebido:`, line);
+
+                if (line.startsWith('P1:') && playerNum === 1) {
+                    const potValue = parseInt(line.substring(3));
+                    if (isNaN(potValue)) return;
+                    
+                    if (this.isCalibratingP1) {
+                        if (potValue < this.potMin) this.potMin = potValue;
+                        if (potValue > this.potMax) this.potMax = potValue;
+                    } else {
+                        const paddleMaxY = this.canvas.height - this.PADDLE_HEIGHT;
+                        this.playerTargetY = this.mapValue(potValue, this.potMin, this.potMax, 0, paddleMaxY);
+                    }
+                }
+                else if (line.startsWith('P2:') && playerNum === 2) {
+                    const potValue = parseInt(line.substring(3));
+                    if (isNaN(potValue)) return;
+
+                    if (this.isCalibratingP2) {
+                        if (potValue < this.potMinP2) this.potMinP2 = potValue;
+                        if (potValue > this.potMaxP2) this.potMaxP2 = potValue;
+                    } else {
+                        const paddleMaxY = this.canvas.height - this.PADDLE_HEIGHT;
+                        this.cpuTargetY = this.mapValue(potValue, this.potMinP2, this.potMaxP2, 0, paddleMaxY);
+                    }
+                }
+                else if (line === 'BTN:1' && playerNum === 1) {
+                    // Lógica do botão (P1)
+                    if (this.gameOver) this.resetGame();
+                    else if (!this.gameRunning) this.startGame();
+                }
+            }
+
+            // **FIX 4: Removido console.log de alta frequência**
+            mapValue(value, inMin, inMax, outMin, outMax) {
+                if (inMax === inMin) {
+                    // Isso acontece se a calibração falhar e o min/max forem iguais
+                    console.warn('Divisão por zero no mapeamento! (Calibração falhou?)');
+                    return (outMin + outMax) / 2; // Retorna o meio
+                }
+                
+                let mappedValue = (value - inMin) * (outMax - outMin) / (inMax - inMin) + outMin;
+                
+                // Limita o valor ao intervalo de saída
+                return Math.max(outMin, Math.min(mappedValue, outMax));
+            }
+            
+            updateStatus(playerNum, message, cssClass) {
+                if (playerNum === 1) {
+                    this.ui.statusTextP1.textContent = `P1: ${message}`;
+                    this.ui.statusIndicatorP1.className = `status-indicator ${cssClass}`;
+                } else {
+                    this.ui.statusTextP2.textContent = `P2: ${message}`;
+                    this.ui.statusIndicatorP2.className = `status-indicator ${cssClass}`;
+                }
+            }
+
+            // --- LOOP PRINCIPAL DO JOGO ---
+            update() {
+                if (this.isPaused || this.gameOver) return;
+
+                // Movimento P1 (Sempre move, mesmo antes do jogo começar)
+                let distance = this.playerTargetY - this.playerY;
+                if (Math.abs(distance) < 1) this.playerY = this.playerTargetY;
+                else this.playerY += distance * this.PADDLE_SMOOTHING;
+                this.playerY = Math.max(0, Math.min(this.canvas.height - this.PADDLE_HEIGHT, this.playerY));
+
+                // Movimento CPU / P2
+                if (this.gameMode === 'cpu') {
+                    // IA da CPU
+                    const cpuCenter = this.cpuY + this.PADDLE_HEIGHT / 2;
+                    const deadZone = 10;
+                    const cpuSpeed = 4.5;
+                    if (cpuCenter < this.ballY - deadZone) this.cpuY += cpuSpeed;
+                    else if (cpuCenter > this.ballY + deadZone) this.cpuY -= cpuSpeed;
+                } else { 
+                    // Movimento P2 (Arduino ou Mouse)
+                    distance = this.cpuTargetY - this.cpuY;
+                    if (Math.abs(distance) < 1) this.cpuY = this.cpuTargetY;
+                    else this.cpuY += distance * this.PADDLE_SMOOTHING;
+                }
+                this.cpuY = Math.max(0, Math.min(this.canvas.height - this.PADDLE_HEIGHT, this.cpuY));
+
+
+                // Lógica da bola só roda se o jogo estiver ativo
+                if (!this.gameRunning) return;
+
+                // Movimento Bola
+                this.ballX += this.ballSpeedX;
+                this.ballY += this.ballSpeedY;
+
+                // Colisão Cima/Baixo
+                if (this.ballY - this.BALL_RADIUS < 0) {
+                    this.ballY = this.BALL_RADIUS;
+                    this.ballSpeedY = -this.ballSpeedY;
+                } else if (this.ballY + this.BALL_RADIUS > this.canvas.height) {
+                    this.ballY = this.canvas.height - this.BALL_RADIUS;
+                    this.ballSpeedY = -this.ballSpeedY;
+                }
+
+                // Pontuação
+                if (this.ballX - this.BALL_RADIUS < 0) {
+                    this.cpuScore++; 
+                    this.updateScoreDisplay();
+                    if (this.cpuScore >= this.WINNING_SCORE) this.endGame(this.gameMode === 'cpu' ? 'CPU' : 'JOGADOR 2');
+                    else this.resetBall(); // Saca com atraso
+                    return;
+                }
+                if (this.ballX + this.BALL_RADIUS > this.canvas.width) {
+                    this.playerScore++; 
+                    this.updateScoreDisplay();
+                    if (this.playerScore >= this.WINNING_SCORE) this.endGame('JOGADOR 1');
+                    else this.resetBall(); // Saca com atraso
+                    return;
+                }
+
+                // Colisão Raquetes
+                let hitRegistered = false;
+                let paddleHit = null; // 1 para P1, 2 para P2/CPU
+
+                // Colisão P1 (Lado esquerdo)
+                // Verifica se a bola está indo para a esquerda (speedX < 0)
+                // e se está na "área" do paddle P1
+                if (this.ballSpeedX < 0 && 
+                    this.ballX - this.BALL_RADIUS < (10 + this.PADDLE_WIDTH) && 
+                    this.ballX - this.BALL_RADIUS > 10) 
+                {
+                    if (this.ballY + this.BALL_RADIUS > this.playerY && this.ballY - this.BALL_RADIUS < this.playerY + this.PADDLE_HEIGHT) {
+                        this.ballX = 10 + this.PADDLE_WIDTH + this.BALL_RADIUS; // Corrige posição
+                        hitRegistered = true;
+                        paddleHit = 1;
+                    }
+                }
+                // Colisão P2/CPU (Lado direito)
+                // Verifica se a bola está indo para a direita (speedX > 0)
+                else if (this.ballSpeedX > 0 && 
+                         this.ballX + this.BALL_RADIUS > (this.canvas.width - 10 - this.PADDLE_WIDTH) &&
+                         this.ballX + this.BALL_RADIUS < this.canvas.width - 10) 
+                {
+                    if (this.ballY + this.BALL_RADIUS > this.cpuY && this.ballY - this.BALL_RADIUS < this.cpuY + this.PADDLE_HEIGHT) {
+                        this.ballX = this.canvas.width - 10 - this.PADDLE_WIDTH - this.BALL_RADIUS; // Corrige posição
+                        hitRegistered = true;
+                        paddleHit = 2;
+                    }
+                }
+
+                // Lógica de aceleração e ângulo
+                if (hitRegistered) {
+                    this.hitCounter++; 
+                    let speedMultiplier = 1.0; 
+                    if (this.hitCounter > 0 && this.hitCounter % 4 === 0) {
+                        speedMultiplier = this.BALL_ACCELERATION;
+                    }
+                    
+                    this.ballSpeedX = -this.ballSpeedX * speedMultiplier;
+                    
+                    // Cálculo do ângulo de rebatida
+                    let paddleY = (paddleHit === 1) ? this.playerY : this.cpuY;
+                    // Onde a bola bateu no paddle (de -altura/2 a +altura/2)
+                    let intersectY = (this.ballY - (paddleY + this.PADDLE_HEIGHT / 2));
+                    // Normaliza (de -1 a +1)
+                    let normalizedIntersectY = intersectY / (this.PADDLE_HEIGHT / 2);
+                    // Converte para um ângulo (ex: 45 graus = PI/4)
+                    let bounceAngle = normalizedIntersectY * (Math.PI / 4); 
+                    
+                    // Pega a velocidade atual (após aceleração)
+                    let currentSpeed = Math.sqrt(this.ballSpeedX**2 + this.ballSpeedY**2);
+                    
+                    // Ajusta as velocidades X e Y com base no novo ângulo
+                    this.ballSpeedY = currentSpeed * Math.sin(bounceAngle);
+                    // Garante que a velocidade X mantenha a direção e magnitude
+                    this.ballSpeedX = (this.ballSpeedX > 0 ? 1 : -1) * currentSpeed * Math.cos(bounceAngle);
+                }
+            }
+
+            draw() {
+                // Fundo (com leve rastro para efeito "ghosting")
+                this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+                // Linha central
+                this.ctx.setLineDash([10, 10]);
+                this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+                this.ctx.lineWidth = 5;
+                this.ctx.beginPath();
+                this.ctx.moveTo(this.canvas.width / 2, 0);
+                this.ctx.lineTo(this.canvas.width / 2, this.canvas.height);
+                this.ctx.stroke();
+                this.ctx.setLineDash([]);
+
+                // Raquetes
+                this.ctx.fillStyle = '#00ffff';
+                this.ctx.shadowColor = '#00ffff';
+                this.ctx.shadowBlur = 10;
+                this.ctx.fillRect(10, this.playerY, this.PADDLE_WIDTH, this.PADDLE_HEIGHT);
+                
+                this.ctx.fillStyle = '#ff00ff';
+                this.ctx.shadowColor = '#ff00ff';
+                this.ctx.shadowBlur = 10;
+                this.ctx.fillRect(this.canvas.width - this.PADDLE_WIDTH - 10, this.cpuY, this.PADDLE_WIDTH, this.PADDLE_HEIGHT);
+
+                // Bola
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.shadowColor = '#ffffff';
+                this.ctx.shadowBlur = 15;
+                this.ctx.beginPath();
+                this.ctx.arc(this.ballX, this.ballY, this.BALL_RADIUS, 0, Math.PI * 2);
+                this.ctx.fill();
+                
+                // Reseta sombras
+                this.ctx.shadowBlur = 0;
+
+                // Texto de Pausa ou Fim de Jogo
+                if (this.gameOver) {
+                    this.drawText(this.winnerText, 50, '#ffff00');
+                } else if (this.isPaused) {
+                    this.drawText('PAUSADO', 60, '#ffffff');
+                } 
+                // **FIX 2: Feedback visual para o saque**
+                else if (this.gameRunning && this.ballSpeedX === 0 && this.ballSpeedY === 0) {
+                     this.drawText('PREPARAR!', 40, '#00ff00');
+                }
+            }
+            
+            drawText(text, fontSize, color) {
+                this.ctx.fillStyle = color;
+                this.ctx.font = `${fontSize}px 'Press Start 2P'`;
+                this.ctx.textAlign = 'center';
+                this.ctx.textBaseline = 'middle';
+                this.ctx.shadowColor = color;
+                this.ctx.shadowBlur = 10;
+                this.ctx.fillText(text, this.canvas.width / 2, this.canvas.height / 2);
+                this.ctx.shadowBlur = 0;
+            }
+
+            gameLoop() {
+                this.update();
+                this.draw();
+                // Solicita o próximo frame de animação
+                requestAnimationFrame(() => this.gameLoop());
+            }
+        }
+
+        // Inicia o jogo quando a janela carregar
+        window.onload = () => {
+            new PongGame('gameCanvas');
+        };
+    </script>
+</body>
+</html>
