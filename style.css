@@ -1,7 +1,12 @@
 /* --- GERAL E FONTES --- */
 body {
-    background-color: #87CEEB; /* Azul Céu */
-    color: #4A2E1D; /* Marrom Escuro (Madeira) */
+     background-image: url('https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fimg.freepik.com%2Fpremium-photo%2Fpixel-art-illustration-tropical-beach-scene-with-palm-trees-bright-sun-waves-crashing-shore_36682-108432.jpg%3Fw%3D2000&f=1&nofb=1&ipt=126cde5319f521532bc7db74d5164b8e26f95acbb8c2695fc1bdaaaed667609a'); 
+   
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    
+    color: #FFFFFF;
     font-family: 'Press Start 2P', cursive;
     display: flex;
     justify-content: center;
@@ -10,14 +15,8 @@ body {
     margin: 0;
     font-size: 14px;
     
-    /* Remove o anti-aliasing da fonte para um look pixelado */
-    font-smooth: never;
-    -webkit-font-smoothing : none;
-}
-
-/* Remove bordas arredondadas de tudo */
-* {
-    border-radius: 0 !important;
+    /* Isso garante que sua imagem de fundo pixelada não fique borrada */
+    image-rendering: pixelated;
 }
 
 .container {
@@ -28,17 +27,17 @@ body {
 h1 {
     font-size: 2.5rem;
     color: #FFFF00; /* Amarelo Sol */
-    /* Sombra dura, estilo pixel art */
-    text-shadow: 4px 4px 0px #FF8C00; /* Laranja */
+    text-shadow: 3px 3px 0px #FF8C00; /* Sombra Laranja */
     text-align: center;
     margin-bottom: 20px;
 }
 
 h2 {
     font-size: 1.2rem;
-    color: #4A2E1D; /* Marrom Escuro */
+    color: #FFFFFF; /* Branco */
+    text-shadow: 2px 2px 0px #3a2e0a; /* Sombra (do painel de madeira) */
     margin-bottom: 15px;
-    border-bottom: 3px solid #4A2E1D;
+    border-bottom: 2px dashed #FFFFFF;
     padding-bottom: 5px;
 }
 
@@ -56,11 +55,12 @@ h2 {
 .panel {
     flex-basis: 350px;
     flex-shrink: 0;
-    background-color: #D2B48C; /* Tan (Madeira/Barraca) */
-    border: 5px solid #8B4513; /* Marrom (Madeira) */
+    /* Fundo de "madeira" semi-transparente para ver a praia */
+    background-color: rgba(139, 69, 19, 0.85); /* #8B4513 - Marrom Madeira */
+    border: 4px solid #f4a460; /* Borda "Areia Clara" */
     padding: 20px;
-    /* Sombra dura */
-    box-shadow: 8px 8px 0px rgba(0,0,0,0.2);
+    /* Sombra pixelada */
+    box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.5);
 }
 
 .panel-section {
@@ -69,21 +69,13 @@ h2 {
 
 /* --- ÁREA DO JOGO (CANVAS) --- */
 canvas#gameCanvas {
-    /* O Cenário: Céu, Mar e Areia! */
-    background: linear-gradient(
-        to bottom, 
-        #87CEEB 0%, /* Céu */
-        #87CEEB 40%, 
-        #1E90FF 40%, /* Mar */
-        #1E90FF 70%, 
-        #F9E076 70%, /* Areia */
-        #F9E076 100%
-    );
-    border: 5px solid #8B4513; /* Moldura de Madeira */
+    /* O seu JS já desenha o fundo azul (água) */
+    border: 4px solid #f7d797; /* Borda cor de "Areia" */
     width: 100%;
     height: auto;
-    box-shadow: 8px 8px 0px rgba(0,0,0,0.2);
-    image-rendering: pixelated; /* Garante que o canvas fique pixelado */
+    box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.5); /* Sombra pixelada */
+    /* Garante que o jogo fique pixelado */
+    image-rendering: pixelated;
 }
 
 /* --- PLACAR --- */
@@ -94,21 +86,20 @@ canvas#gameCanvas {
     width: 100%;
     display: flex;
     justify-content: space-around;
-    pointer-events: none; 
+    pointer-events: none;
     font-size: 1.5rem;
+    color: #FFFFFF;
 }
 
 .score {
-    /* Sombra dura preta para legibilidade */
     text-shadow: 2px 2px 0px #000;
 }
 .score-label {
-    color: #FFFFFF; /* Texto branco */
+    color: #FFFF00; /* Amarelo (para combinar com o sol) */
     font-size: 1rem;
     margin-bottom: 10px;
 }
 .score-value {
-    color: #FFFF00; /* Amarelo Sol */
     font-size: 2.5rem;
 }
 
@@ -116,52 +107,52 @@ canvas#gameCanvas {
 button {
     font-family: 'Press Start 2P', cursive;
     font-size: 0.9rem;
-    color: #4A2E1D; /* Texto Marrom */
-    background-color: #40E0D0; /* Azul Turquesa (Mar) */
-    border: 3px solid #008B8B; /* Ciano Escuro */
+    color: #FFFFFF;
+    background-color: #228B22; /* Verde (folha de palmeira) */
+    border: 2px solid #FFFFFF;
     padding: 10px 15px;
     width: 100%;
     margin-bottom: 10px;
     cursor: pointer;
-    box-shadow: 4px 4px 0px #008B8B; /* Sombra dura */
-    transition: all 0.05s ease;
+    transition: all 0.1s ease;
+    /* Sombra pixelada no botão */
+    box-shadow: 3px 3px 0px #134c13; /* Verde escuro */
 }
 
 button:hover {
-    background-color: #7FFFD4; /* Água-marinha (Hover) */
+    background-color: #32CD32; /* Verde claro */
 }
 
 button:active {
     /* Efeito de botão pressionado */
-    box-shadow: inset 4px 4px 0px #008B8B;
-    transform: translate(4px, 4px);
+    box-shadow: none;
+    transform: translate(3px, 3px);
 }
 
 button:disabled {
-    background-color: #A9A9A9;
-    color: #696969;
-    border-color: #696969;
-    box-shadow: 4px 4px 0px #696969;
+    background-color: #555;
+    color: #999;
+    border-color: #999;
+    box-shadow: 3px 3px 0px #333;
     cursor: not-allowed;
 }
 
-/* Botões de MODO */
+/* Botões de MODO (1v1, 1vCPU) */
 .mode-select {
     display: flex;
     gap: 10px;
 }
 .mode-btn.active {
-    background-color: #F9E076; /* Amarelo Areia */
-    border-color: #E6C86E;
-    color: #4A2E1D;
-    box-shadow: 4px 4px 0px #E6C86E;
+    background-color: #00bfff; /* Azul (água) */
+    color: #FFFFFF;
+    border-color: #FFFFFF;
+    box-shadow: 3px 3px 0px #005f7f;
 }
 
 /* Botão de MUTE */
 #muteBtn.muted {
-    background-color: #FF6347; /* Vermelho Tomate (Pôr do Sol) */
-    border-color: #CD5C5C;
-    box-shadow: 4px 4px 0px #CD5C5C;
+    background-color: #FF4500; /* Vermelho-Laranja (Caranguejo) */
+    box-shadow: 3px 3px 0px #a12c00;
 }
 
 /* --- STATUS DE CONEXÃO --- */
@@ -169,34 +160,37 @@ button:disabled {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background-color: #4A2E1D; /* Fundo Marrom */
-    color: #FFFFFF; /* Texto Branco */
+    background-color: #f4a460; /* Fundo cor de Areia */
     padding: 8px;
-    border: 3px solid #8B4513;
+    border: 2px solid #3a2e0a; /* Borda marrom escura */
     margin-bottom: 10px;
+    color: #3a2e0a; /* Texto escuro */
 }
 
 .status-indicator {
     width: 20px;
     height: 20px;
-    border: 2px solid #FFFFFF;
-    box-shadow: inset 2px 2px 0px rgba(0,0,0,0.3); /* Sombra interna pixelada */
+    border-radius: 50%;
+    border: 2px solid #3a2e0a;
 }
 
-/* Classes do JavaScript para o status (sem blur) */
+/* Classes do JavaScript para o status */
 .status-disconnected {
-    background-color: #E63946; /* Vermelho Forte */
+    background-color: #FF0000; /* Vermelho */
+    box-shadow: 0 0 10px #FF0000;
 }
 .status-calibrating {
-    background-color: #FFFF00; /* Amarelo Forte */
-    animation: blink 1s infinite steps(2, start); /* Animação "blink" pixelada */
+    background-color: #FFFF00; /* Amarelo */
+    box-shadow: 0 0 10px #FFFF00;
+    animation: pulse 1s infinite;
 }
 .status-connected {
-    background-color: #00FF00; /* Verde Forte */
+    background-color: #00FF00; /* Verde */
+    box-shadow: 0 0 10px #00FF00;
 }
 
-@keyframes blink {
-    to {
-        visibility: hidden;
-    }
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.3; }
+    100% { opacity: 1; }
 }
