@@ -549,18 +549,18 @@
 
             this.ctx.lineWidth = 2; 
 
-            this.ctx.fillStyle = '#00ffff'; 
+            this.ctx.fillStyle = '#FF8C00'; // Laranja Pôr-do-Sol 
             this.ctx.fillRect(0, this.playerY, this.PADDLE_WIDTH, this.PADDLE_HEIGHT);
             this.ctx.strokeStyle = '#FFFFFF';
             this.ctx.strokeRect(0, this.playerY, this.PADDLE_WIDTH, this.PADDLE_HEIGHT);
             
-            this.ctx.fillStyle = (this.gameMode === 'cpu') ? '#ff00ff' : '#00ff00';
+           this.ctx.fillStyle = (this.gameMode === 'cpu') ? '#E63946' : '#40E0D0'; // Vermelho "Tubarão" ou Turquesa "Mar"// Cor Magenta ou Verde
             this.ctx.fillRect(this.canvas.width - this.PADDLE_WIDTH, this.cpuY, this.PADDLE_WIDTH, this.PADDLE_HEIGHT);
             this.ctx.strokeStyle = '#FFFFFF';
             this.ctx.strokeRect(this.canvas.width - this.PADDLE_WIDTH, this.cpuY, this.PADDLE_WIDTH, this.PADDLE_HEIGHT);
             
             if (this.gameRunning || this.gameOver) {
-                this.ctx.fillStyle = '#ff8c00';
+                this.ctx.fillStyle = '#FFFF00'; // <-- AMARELO SOL!
                 this.ctx.beginPath();
                 this.ctx.arc(this.ballX, this.ballY, this.BALL_RADIUS, 0, Math.PI * 2);
                 this.ctx.fill();

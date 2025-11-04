@@ -1,7 +1,7 @@
 /* --- GERAL E FONTES --- */
 body {
-    background-color: #0F0F2A; /* Azul escuro */
-    color: #FFFFFF;
+    background-color: #87CEEB; /* Azul Céu */
+    color: #4A2E1D; /* Marrom Escuro (Madeira) */
     font-family: 'Press Start 2P', cursive;
     display: flex;
     justify-content: center;
@@ -9,6 +9,15 @@ body {
     height: 100vh;
     margin: 0;
     font-size: 14px;
+    
+    /* Remove o anti-aliasing da fonte para um look pixelado */
+    font-smooth: never;
+    -webkit-font-smoothing : none;
+}
+
+/* Remove bordas arredondadas de tudo */
+* {
+    border-radius: 0 !important;
 }
 
 .container {
@@ -18,17 +27,18 @@ body {
 
 h1 {
     font-size: 2.5rem;
-    color: #00FFFF; /* Ciano */
-    text-shadow: 3px 3px 0px #FF00FF; /* Magenta */
+    color: #FFFF00; /* Amarelo Sol */
+    /* Sombra dura, estilo pixel art */
+    text-shadow: 4px 4px 0px #FF8C00; /* Laranja */
     text-align: center;
     margin-bottom: 20px;
 }
 
 h2 {
     font-size: 1.2rem;
-    color: #FFFF00; /* Amarelo */
+    color: #4A2E1D; /* Marrom Escuro */
     margin-bottom: 15px;
-    border-bottom: 2px dashed #FFFF00;
+    border-bottom: 3px solid #4A2E1D;
     padding-bottom: 5px;
 }
 
@@ -40,16 +50,17 @@ h2 {
 
 .game-area {
     flex-grow: 1;
-    position: relative; /* Necessário para o placar */
+    position: relative; 
 }
 
 .panel {
     flex-basis: 350px;
     flex-shrink: 0;
-    background-color: #1A1A3A;
-    border: 4px solid #00FFFF;
+    background-color: #D2B48C; /* Tan (Madeira/Barraca) */
+    border: 5px solid #8B4513; /* Marrom (Madeira) */
     padding: 20px;
-    box-shadow: 0 0 15px #00FFFF;
+    /* Sombra dura */
+    box-shadow: 8px 8px 0px rgba(0,0,0,0.2);
 }
 
 .panel-section {
@@ -58,11 +69,21 @@ h2 {
 
 /* --- ÁREA DO JOGO (CANVAS) --- */
 canvas#gameCanvas {
-    background-color: #000;
-    border: 4px solid #FF00FF; /* Borda Magenta */
+    /* O Cenário: Céu, Mar e Areia! */
+    background: linear-gradient(
+        to bottom, 
+        #87CEEB 0%, /* Céu */
+        #87CEEB 40%, 
+        #1E90FF 40%, /* Mar */
+        #1E90FF 70%, 
+        #F9E076 70%, /* Areia */
+        #F9E076 100%
+    );
+    border: 5px solid #8B4513; /* Moldura de Madeira */
     width: 100%;
     height: auto;
-    box-shadow: 0 0 15px #FF00FF;
+    box-shadow: 8px 8px 0px rgba(0,0,0,0.2);
+    image-rendering: pixelated; /* Garante que o canvas fique pixelado */
 }
 
 /* --- PLACAR --- */
@@ -73,19 +94,21 @@ canvas#gameCanvas {
     width: 100%;
     display: flex;
     justify-content: space-around;
-    pointer-events: none; /* Permite clicar através do placar */
+    pointer-events: none; 
     font-size: 1.5rem;
 }
 
 .score {
+    /* Sombra dura preta para legibilidade */
     text-shadow: 2px 2px 0px #000;
 }
 .score-label {
-    color: #AAAAAA;
+    color: #FFFFFF; /* Texto branco */
     font-size: 1rem;
     margin-bottom: 10px;
 }
 .score-value {
+    color: #FFFF00; /* Amarelo Sol */
     font-size: 2.5rem;
 }
 
@@ -93,44 +116,52 @@ canvas#gameCanvas {
 button {
     font-family: 'Press Start 2P', cursive;
     font-size: 0.9rem;
-    color: #FFFFFF;
-    background-color: #333333;
-    border: 2px solid #FFFFFF;
+    color: #4A2E1D; /* Texto Marrom */
+    background-color: #40E0D0; /* Azul Turquesa (Mar) */
+    border: 3px solid #008B8B; /* Ciano Escuro */
     padding: 10px 15px;
     width: 100%;
     margin-bottom: 10px;
     cursor: pointer;
-    transition: all 0.1s ease;
+    box-shadow: 4px 4px 0px #008B8B; /* Sombra dura */
+    transition: all 0.05s ease;
 }
 
 button:hover {
-    background-color: #555555;
-    color: #FFFF00;
-    border-color: #FFFF00;
+    background-color: #7FFFD4; /* Água-marinha (Hover) */
+}
+
+button:active {
+    /* Efeito de botão pressionado */
+    box-shadow: inset 4px 4px 0px #008B8B;
+    transform: translate(4px, 4px);
 }
 
 button:disabled {
-    background-color: #222222;
-    color: #555555;
-    border-color: #555555;
+    background-color: #A9A9A9;
+    color: #696969;
+    border-color: #696969;
+    box-shadow: 4px 4px 0px #696969;
     cursor: not-allowed;
 }
 
-/* Botões de MODO (1v1, 1vCPU) */
+/* Botões de MODO */
 .mode-select {
     display: flex;
     gap: 10px;
 }
 .mode-btn.active {
-    background-color: #FF00FF;
-    color: #FFFFFF;
-    border-color: #FFFFFF;
+    background-color: #F9E076; /* Amarelo Areia */
+    border-color: #E6C86E;
+    color: #4A2E1D;
+    box-shadow: 4px 4px 0px #E6C86E;
 }
 
 /* Botão de MUTE */
 #muteBtn.muted {
-    background-color: #FF0000;
-    border-color: #FFFFFF;
+    background-color: #FF6347; /* Vermelho Tomate (Pôr do Sol) */
+    border-color: #CD5C5C;
+    box-shadow: 4px 4px 0px #CD5C5C;
 }
 
 /* --- STATUS DE CONEXÃO --- */
@@ -138,36 +169,34 @@ button:disabled {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background-color: #000;
+    background-color: #4A2E1D; /* Fundo Marrom */
+    color: #FFFFFF; /* Texto Branco */
     padding: 8px;
-    border: 2px solid #555;
+    border: 3px solid #8B4513;
     margin-bottom: 10px;
 }
 
 .status-indicator {
     width: 20px;
     height: 20px;
-    border-radius: 50%;
     border: 2px solid #FFFFFF;
+    box-shadow: inset 2px 2px 0px rgba(0,0,0,0.3); /* Sombra interna pixelada */
 }
 
-/* Classes do JavaScript para o status */
+/* Classes do JavaScript para o status (sem blur) */
 .status-disconnected {
-    background-color: #FF0000; /* Vermelho */
-    box-shadow: 0 0 10px #FF0000;
+    background-color: #E63946; /* Vermelho Forte */
 }
 .status-calibrating {
-    background-color: #FFFF00; /* Amarelo */
-    box-shadow: 0 0 10px #FFFF00;
-    animation: pulse 1s infinite;
+    background-color: #FFFF00; /* Amarelo Forte */
+    animation: blink 1s infinite steps(2, start); /* Animação "blink" pixelada */
 }
 .status-connected {
-    background-color: #00FF00; /* Verde */
-    box-shadow: 0 0 10px #00FF00;
+    background-color: #00FF00; /* Verde Forte */
 }
 
-@keyframes pulse {
-    0% { opacity: 1; }
-    50% { opacity: 0.3; }
-    100% { opacity: 1; }
+@keyframes blink {
+    to {
+        visibility: hidden;
+    }
 }
