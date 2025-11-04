@@ -272,14 +272,17 @@
                 this.canvas = document.getElementById(canvasId);
                 this.ctx = this.canvas.getContext('2d');
 
-                // --- CONSTANTES DO JOGO (VELOCIDADE REDUZIDA) ---
+                // --- CONSTANTES DO JOGO (AJUSTADAS) ---
                 this.PADDLE_WIDTH = 15;
                 this.PADDLE_HEIGHT = 150;
                 this.BALL_RADIUS = 10;
                 this.WINNING_SCORE = 3;
-                this.PADDLE_SMOOTHING = 0.12;
+                // **FIX 3: Aumentado para maior responsividade**
+                this.PADDLE_SMOOTHING = 0.25; // Original: 0.12
                 this.INITIAL_BALL_SPEED = 4;
                 this.BALL_ACCELERATION = 1.05;
+                // **FIX 2: Atraso para saque (em ms)**
+                this.SERVE_DELAY = 1000; // 1 segundo
 
                 // --- ESTADO DO JOGO ---
                 this.hitCounter = 0;
@@ -305,7 +308,7 @@
                 this.readerP1 = null;
                 this.portP2 = null;
                 this.readerP2 = null;
-                this.isCalibratingP1 = false; // SEPARADO PARA CADA PLAYER
+                this.isCalibratingP1 = false;
                 this.isCalibratingP2 = false;
                 this.potMin = 1023;
                 this.potMax = 0;
@@ -337,7 +340,7 @@
 
             init() {
                 this.initEventListeners();
-                this.resetBall(true);
+                this.resetBall(true); // Inicia com a bola parada
                 this.gameLoop();
             }
 
@@ -377,6 +380,7 @@
             }
 
             handleMouseMovement(event) {
+                // Permite o movimento do mouse para P2 se o P2 não estiver conectado
                 if (this.gameMode !== 'player2' || this.portP2) return;
                 const rect = this.canvas.getBoundingClientRect();
                 const scaleY = this.canvas.height / rect.height;
@@ -384,6 +388,7 @@
                 this.cpuTargetY = mouseY - this.PADDLE_HEIGHT / 2;
             }
 
+            // **FIX 2: Modificado para não sacar a bola imediatamente**
             startGame() {
                 if (this.gameRunning || this.gameOver) return;
                 this.gameRunning = true;
@@ -392,7 +397,17 @@
                 this.ui.pauseBtn.textContent = 'PAUSAR';
                 this.ui.modeCpuBtn.disabled = true; 
                 this.ui.modeP2Btn.disabled = true;
-                this.resetBall();
+                
+                this.resetBall(false); // Coloca a bola no centro, parada
+
+                // Inicia a bola após um breve atraso
+                setTimeout(() => {
+                    // Checa se o jogo ainda está rodando e não foi pausado/resetado
+                    if (this.gameRunning && !this.isPaused) { 
+                        this.serveBall(); 
+                    }
+                }, this.SERVE_DELAY); 
+                
                 this.ui.backgroundMusic.play();
             }
             
@@ -414,12 +429,11 @@
                 this.ui.pauseBtn.textContent = 'PAUSAR';
                 this.ui.modeCpuBtn.disabled = false; 
                 this.ui.modeP2Btn.disabled = false;
-                this.hitCounter = 0;
                 this.playerY = (this.canvas.height - this.PADDLE_HEIGHT) / 2;
                 this.playerTargetY = this.playerY; 
                 this.cpuY = (this.canvas.height - this.PADDLE_HEIGHT) / 2;
                 this.cpuTargetY = this.cpuY; 
-                this.resetBall(true);
+                this.resetBall(true); // 'true' força a bola a parar e não sacar
             }
 
             endGame(winner) {
@@ -435,15 +449,30 @@
                 this.ui.modeP2Btn.disabled = false;
             }
 
+            // **FIX 2: Nova função de saque**
+            serveBall() {
+                this.hitCounter = 0; // Zera o contador de rebatidas a cada saque
+                this.ballSpeedX = (Math.random() > 0.5 ? 1 : -1) * this.INITIAL_BALL_SPEED;
+                this.ballSpeedY = (Math.random() > 0.5 ? 1 : -1) * (Math.random() * 2 + 1);
+            }
+
+            // **FIX 2: Modificado para sacar com atraso após ponto**
             resetBall(shouldStop = false) {
                 this.ballX = this.canvas.width / 2;
                 this.ballY = this.canvas.height / 2;
-                if (shouldStop) {
-                    this.ballSpeedX = 0;
-                    this.ballSpeedY = 0;
-                } else {
-                    this.ballSpeedX = (Math.random() > 0.5 ? 1 : -1) * this.INITIAL_BALL_SPEED;
-                    this.ballSpeedY = (Math.random() > 0.5 ? 1 : -1) * (Math.random() * 2 + 1);
+                
+                // Para a bola em todos os casos
+                this.ballSpeedX = 0;
+                this.ballSpeedY = 0;
+
+                // Se for um "ponto marcado" (shouldStop=false) E o jogo estiver rolando,
+                // saca após um atraso.
+                if (!shouldStop && this.gameRunning) {
+                    setTimeout(() => {
+                        if (this.gameRunning && !this.isPaused) {
+                            this.serveBall();
+                        }
+                    }, this.SERVE_DELAY); 
                 }
             }
 
@@ -452,7 +481,7 @@
                 this.ui.cpuScoreDisplay.textContent = this.cpuScore;
             }
 
-            // --- LÓGICA DE CONEXÃO CORRIGIDA ---
+            // --- LÓGICA DE CONEXÃO ---
             
             async toggleArduinoConnection(playerNum) {
                 const port = (playerNum === 1) ? this.portP1 : this.portP2;
@@ -473,7 +502,7 @@
                     }
                     
                     const port = await navigator.serial.requestPort();
-                    await port.open({ baudRate: 9600 });
+                    await port.open({ baudRate: 9600 }); // Deve bater com o Serial.begin(9600) do Arduino
 
                     if (playerNum === 1) {
                         this.portP1 = port;
@@ -489,7 +518,6 @@
                 }
             }
 
-            // CALIBRAÇÃO CORRIGIDA - SEPARADA PARA CADA PLAYER
             startCalibration(playerNum) {
                 if (playerNum === 1) {
                     this.isCalibratingP1 = true;
@@ -500,7 +528,7 @@
                     setTimeout(() => {
                         this.isCalibratingP1 = false;
                         this.finalizeCalibration(playerNum);
-                    }, 6000);
+                    }, 6000); // 6 segundos para calibrar
                 } else {
                     this.isCalibratingP2 = true;
                     this.potMinP2 = 1023;
@@ -510,58 +538,41 @@
                     setTimeout(() => {
                         this.isCalibratingP2 = false;
                         this.finalizeCalibration(playerNum);
-                    }, 6000);
+                    }, 6000); // 6 segundos para calibrar
                 }
             }
 
+            // **FIX 1: Lógica de fallback da calibração melhorada**
             finalizeCalibration(playerNum) {
                 if (playerNum === 1) {
                     let range = this.potMax - this.potMin;
-                    
                     console.log(`P1 - Range calibrado: ${range}, Min: ${this.potMin}, Max: ${this.potMax}`);
                     
+                    // Se o range for muito pequeno, assume que o usuário não girou
+                    // e usa o fallback de 0-1023.
                     if (range < 100) {
-                        console.warn(`Calibração P1 fraca. Range: ${range}`);
-                        
-                        if (this.potMin < 500) {
-                            this.potMax = 1023;
-                        } else if (this.potMax > 500) {
-                            this.potMin = 0;
-                        } else {
-                            this.potMin = 0;
-                            this.potMax = 1023;
-                        }
-                        console.log(`P1 calibrado forçadamente: Min=${this.potMin}, Max=${this.potMax}`);
+                        console.warn(`Calibração P1 fraca. Range: ${range}. Usando fallback 0-1023.`);
+                        this.potMin = 0;
+                        this.potMax = 1023;
                     }
                     
                     this.updateStatus(1, 'Conectado', 'status-connected');
                     this.ui.connectBtnP1.textContent = 'DESCONECTAR P1';
-                    
-                    // TESTE: Mostra valores finais no console
                     console.log(`P1 CALIBRADO - Min: ${this.potMin}, Max: ${this.potMax}, Range: ${this.potMax - this.potMin}`);
                     
                 } else {
                     let range = this.potMaxP2 - this.potMinP2;
-                    
                     console.log(`P2 - Range calibrado: ${range}, Min: ${this.potMinP2}, Max: ${this.potMaxP2}`);
                     
+                    // Lógica de fallback para P2
                     if (range < 100) {
-                        console.warn(`Calibração P2 fraca. Range: ${range}`);
-                        
-                        if (this.potMinP2 < 500) {
-                            this.potMaxP2 = 1023;
-                        } else if (this.potMaxP2 > 500) {
-                            this.potMinP2 = 0;
-                        } else {
-                            this.potMinP2 = 0;
-                            this.potMaxP2 = 1023;
-                        }
-                        console.log(`P2 calibrado forçadamente: Min=${this.potMinP2}, Max=${this.potMaxP2}`);
+                        console.warn(`Calibração P2 fraca. Range: ${range}. Usando fallback 0-1023.`);
+                        this.potMinP2 = 0;
+                        this.potMaxP2 = 1023;
                     }
                     
                     this.updateStatus(2, 'Conectado', 'status-connected');
                     this.ui.connectBtnP2.textContent = 'DESCONECTAR P2';
-                    
                     console.log(`P2 CALIBRADO - Min: ${this.potMinP2}, Max: ${this.potMaxP2}, Range: ${this.potMaxP2 - this.potMinP2}`);
                 }
             }
@@ -571,19 +582,12 @@
                 let reader = (playerNum === 1) ? this.readerP1 : this.readerP2;
 
                 if (reader) {
-                    try {
-                        await reader.cancel();
-                    } catch (error) {
-                        console.warn(`Erro ao cancelar leitor ${playerNum}:`, error.message);
-                    }
+                    try { await reader.cancel(); } 
+                    catch (error) { console.warn(`Erro ao cancelar leitor ${playerNum}:`, error.message); }
                 }
-                
                 if (port) {
-                    try {
-                        await port.close();
-                    } catch (error) {
-                        console.warn(`Erro ao fechar porta ${playerNum}:`, error.message);
-                    }
+                    try { await port.close(); } 
+                    catch (error) { console.warn(`Erro ao fechar porta ${playerNum}:`, error.message); }
                 }
                 
                 if (playerNum === 1) {
@@ -615,7 +619,6 @@
                         let partialData = ''; 
                         while (true) {
                             const { value, done } = await reader.read();
-                            
                             if (done) break;
                             
                             partialData += decoder.decode(value, { stream: true });
@@ -627,71 +630,64 @@
                             }
                         }
                     } catch (error) { 
-                        console.log(`Porta ${playerNum} fechada:`, error.message);
+                        // Ignora erros de "porta fechada"
+                        if (error.message !== "The port is closed.") {
+                            console.log(`Erro na leitura ${playerNum}:`, error.message);
+                        }
                     } 
                     finally { 
-                        reader.releaseLock(); 
+                        if (reader) reader.releaseLock(); 
                     }
                 }
             }
 
-            // PROCESSAMENTO CORRIGIDO
+            // **FIX 4: Removidos console.log de alta frequência para evitar lag**
             processArduinoData(line, playerNum) {
-                // DEBUG: Mostra todas as linhas recebidas
-                console.log(`P${playerNum} recebido:`, line);
+                // Este log foi removido pois rodava muito rápido e causava lag:
+                // console.log(`P${playerNum} recebido:`, line);
 
                 if (line.startsWith('P1:') && playerNum === 1) {
                     const potValue = parseInt(line.substring(3));
                     if (isNaN(potValue)) return;
-
-                    console.log(`P1 - Valor: ${potValue}, Calibrando: ${this.isCalibratingP1}`);
-
+                    
                     if (this.isCalibratingP1) {
                         if (potValue < this.potMin) this.potMin = potValue;
                         if (potValue > this.potMax) this.potMax = potValue;
-                        console.log(`P1 Calibrando - Min: ${this.potMin}, Max: ${this.potMax}`);
                     } else {
                         const paddleMaxY = this.canvas.height - this.PADDLE_HEIGHT;
                         this.playerTargetY = this.mapValue(potValue, this.potMin, this.potMax, 0, paddleMaxY);
-                        console.log(`P1 Movendo - Valor: ${potValue}, TargetY: ${this.playerTargetY}`);
                     }
                 }
                 else if (line.startsWith('P2:') && playerNum === 2) {
                     const potValue = parseInt(line.substring(3));
                     if (isNaN(potValue)) return;
 
-                    console.log(`P2 - Valor: ${potValue}, Calibrando: ${this.isCalibratingP2}`);
-
                     if (this.isCalibratingP2) {
                         if (potValue < this.potMinP2) this.potMinP2 = potValue;
                         if (potValue > this.potMaxP2) this.potMaxP2 = potValue;
-                        console.log(`P2 Calibrando - Min: ${this.potMinP2}, Max: ${this.potMaxP2}`);
                     } else {
                         const paddleMaxY = this.canvas.height - this.PADDLE_HEIGHT;
                         this.cpuTargetY = this.mapValue(potValue, this.potMinP2, this.potMaxP2, 0, paddleMaxY);
-                        console.log(`P2 Movendo - Valor: ${potValue}, TargetY: ${this.cpuTargetY}`);
                     }
                 }
                 else if (line === 'BTN:1' && playerNum === 1) {
+                    // Lógica do botão (P1)
                     if (this.gameOver) this.resetGame();
                     else if (!this.gameRunning) this.startGame();
                 }
             }
 
-            // FUNÇÃO DE MAPEAMENTO MELHORADA
+            // **FIX 4: Removido console.log de alta frequência**
             mapValue(value, inMin, inMax, outMin, outMax) {
                 if (inMax === inMin) {
-                    console.warn('Divisão por zero no mapeamento!');
-                    return (outMin + outMax) / 2;
+                    // Isso acontece se a calibração falhar e o min/max forem iguais
+                    console.warn('Divisão por zero no mapeamento! (Calibração falhou?)');
+                    return (outMin + outMax) / 2; // Retorna o meio
                 }
                 
                 let mappedValue = (value - inMin) * (outMax - outMin) / (inMax - inMin) + outMin;
                 
-                // DEBUG do mapeamento
-                if (Math.random() < 0.01) { // Apenas 1% das vezes para não poluir o console
-                    console.log(`Mapeamento: ${value} -> ${mappedValue} [${inMin}-${inMax} -> ${outMin}-${outMax}]`);
-                }
-                
+                // Limita o valor ao intervalo de saída
                 return Math.max(outMin, Math.min(mappedValue, outMax));
             }
             
@@ -709,12 +705,30 @@
             update() {
                 if (this.isPaused || this.gameOver) return;
 
-                // Movimento P1
+                // Movimento P1 (Sempre move, mesmo antes do jogo começar)
                 let distance = this.playerTargetY - this.playerY;
                 if (Math.abs(distance) < 1) this.playerY = this.playerTargetY;
                 else this.playerY += distance * this.PADDLE_SMOOTHING;
                 this.playerY = Math.max(0, Math.min(this.canvas.height - this.PADDLE_HEIGHT, this.playerY));
 
+                // Movimento CPU / P2
+                if (this.gameMode === 'cpu') {
+                    // IA da CPU
+                    const cpuCenter = this.cpuY + this.PADDLE_HEIGHT / 2;
+                    const deadZone = 10;
+                    const cpuSpeed = 4.5;
+                    if (cpuCenter < this.ballY - deadZone) this.cpuY += cpuSpeed;
+                    else if (cpuCenter > this.ballY + deadZone) this.cpuY -= cpuSpeed;
+                } else { 
+                    // Movimento P2 (Arduino ou Mouse)
+                    distance = this.cpuTargetY - this.cpuY;
+                    if (Math.abs(distance) < 1) this.cpuY = this.cpuTargetY;
+                    else this.cpuY += distance * this.PADDLE_SMOOTHING;
+                }
+                this.cpuY = Math.max(0, Math.min(this.canvas.height - this.PADDLE_HEIGHT, this.cpuY));
+
+
+                // Lógica da bola só roda se o jogo estiver ativo
                 if (!this.gameRunning) return;
 
                 // Movimento Bola
@@ -735,126 +749,148 @@
                     this.cpuScore++; 
                     this.updateScoreDisplay();
                     if (this.cpuScore >= this.WINNING_SCORE) this.endGame(this.gameMode === 'cpu' ? 'CPU' : 'JOGADOR 2');
-                    else this.resetBall();
+                    else this.resetBall(); // Saca com atraso
                     return;
                 }
                 if (this.ballX + this.BALL_RADIUS > this.canvas.width) {
                     this.playerScore++; 
                     this.updateScoreDisplay();
                     if (this.playerScore >= this.WINNING_SCORE) this.endGame('JOGADOR 1');
-                    else this.resetBall();
+                    else this.resetBall(); // Saca com atraso
                     return;
                 }
 
                 // Colisão Raquetes
                 let hitRegistered = false;
-                if (this.ballX - this.BALL_RADIUS <= this.PADDLE_WIDTH && this.ballSpeedX < 0 &&
-                    this.ballY + this.BALL_RADIUS > this.playerY && this.ballY - this.BALL_RADIUS < this.playerY + this.PADDLE_HEIGHT) {
-                    this.ballX = this.PADDLE_WIDTH + this.BALL_RADIUS; 
-                    hitRegistered = true;
+                let paddleHit = null; // 1 para P1, 2 para P2/CPU
+
+                // Colisão P1 (Lado esquerdo)
+                // Verifica se a bola está indo para a esquerda (speedX < 0)
+                // e se está na "área" do paddle P1
+                if (this.ballSpeedX < 0 && 
+                    this.ballX - this.BALL_RADIUS < (10 + this.PADDLE_WIDTH) && 
+                    this.ballX - this.BALL_RADIUS > 10) 
+                {
+                    if (this.ballY + this.BALL_RADIUS > this.playerY && this.ballY - this.BALL_RADIUS < this.playerY + this.PADDLE_HEIGHT) {
+                        this.ballX = 10 + this.PADDLE_WIDTH + this.BALL_RADIUS; // Corrige posição
+                        hitRegistered = true;
+                        paddleHit = 1;
+                    }
                 }
-                else if (this.ballX + this.BALL_RADIUS >= this.canvas.width - this.PADDLE_WIDTH && this.ballSpeedX > 0 &&
-                    this.ballY + this.BALL_RADIUS > this.cpuY && this.ballY - this.BALL_RADIUS < this.cpuY + this.PADDLE_HEIGHT) {
-                    this.ballX = this.canvas.width - this.PADDLE_WIDTH - this.BALL_RADIUS;
-                    hitRegistered = true;
+                // Colisão P2/CPU (Lado direito)
+                // Verifica se a bola está indo para a direita (speedX > 0)
+                else if (this.ballSpeedX > 0 && 
+                         this.ballX + this.BALL_RADIUS > (this.canvas.width - 10 - this.PADDLE_WIDTH) &&
+                         this.ballX + this.BALL_RADIUS < this.canvas.width - 10) 
+                {
+                    if (this.ballY + this.BALL_RADIUS > this.cpuY && this.ballY - this.BALL_RADIUS < this.cpuY + this.PADDLE_HEIGHT) {
+                        this.ballX = this.canvas.width - 10 - this.PADDLE_WIDTH - this.BALL_RADIUS; // Corrige posição
+                        hitRegistered = true;
+                        paddleHit = 2;
+                    }
                 }
 
-                // Lógica de aceleração
+                // Lógica de aceleração e ângulo
                 if (hitRegistered) {
                     this.hitCounter++; 
                     let speedMultiplier = 1.0; 
-                    if (this.hitCounter % 4 === 0) {
+                    if (this.hitCounter > 0 && this.hitCounter % 4 === 0) {
                         speedMultiplier = this.BALL_ACCELERATION;
                     }
+                    
                     this.ballSpeedX = -this.ballSpeedX * speedMultiplier;
-                    this.ballSpeedY += (Math.random() - 0.5) * 2;
+                    
+                    // Cálculo do ângulo de rebatida
+                    let paddleY = (paddleHit === 1) ? this.playerY : this.cpuY;
+                    // Onde a bola bateu no paddle (de -altura/2 a +altura/2)
+                    let intersectY = (this.ballY - (paddleY + this.PADDLE_HEIGHT / 2));
+                    // Normaliza (de -1 a +1)
+                    let normalizedIntersectY = intersectY / (this.PADDLE_HEIGHT / 2);
+                    // Converte para um ângulo (ex: 45 graus = PI/4)
+                    let bounceAngle = normalizedIntersectY * (Math.PI / 4); 
+                    
+                    // Pega a velocidade atual (após aceleração)
+                    let currentSpeed = Math.sqrt(this.ballSpeedX**2 + this.ballSpeedY**2);
+                    
+                    // Ajusta as velocidades X e Y com base no novo ângulo
+                    this.ballSpeedY = currentSpeed * Math.sin(bounceAngle);
+                    // Garante que a velocidade X mantenha a direção e magnitude
+                    this.ballSpeedX = (this.ballSpeedX > 0 ? 1 : -1) * currentSpeed * Math.cos(bounceAngle);
                 }
-
-                // Movimento CPU / P2
-                if (this.gameMode === 'cpu') {
-                    const cpuCenter = this.cpuY + this.PADDLE_HEIGHT / 2;
-                    const deadZone = 10;
-                    const cpuSpeed = 4.5;
-                    if (cpuCenter < this.ballY - deadZone) this.cpuY += cpuSpeed;
-                    else if (cpuCenter > this.ballY + deadZone) this.cpuY -= cpuSpeed;
-                } else { 
-                    distance = this.cpuTargetY - this.cpuY;
-                    if (Math.abs(distance) < 1) this.cpuY = this.cpuTargetY;
-                    else this.cpuY += distance * this.PADDLE_SMOOTHING;
-                }
-                this.cpuY = Math.max(0, Math.min(this.canvas.height - this.PADDLE_HEIGHT, this.cpuY));
             }
 
             draw() {
-                // FUNDO
-                this.ctx.fillStyle = 'rgba(0, 119, 190, 0.25)';
+                // Fundo (com leve rastro para efeito "ghosting")
+                this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
                 this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-                // REDE
-                this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+                // Linha central
+                this.ctx.setLineDash([10, 10]);
+                this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
                 this.ctx.lineWidth = 5;
-                this.ctx.setLineDash([10, 15]);
                 this.ctx.beginPath();
                 this.ctx.moveTo(this.canvas.width / 2, 0);
                 this.ctx.lineTo(this.canvas.width / 2, this.canvas.height);
                 this.ctx.stroke();
                 this.ctx.setLineDash([]);
 
-                // RAQUETES
-                this.ctx.lineWidth = 2;
-
-                // Raquete Jogador 1
+                // Raquetes
                 this.ctx.fillStyle = '#00ffff';
-                this.ctx.fillRect(0, this.playerY, this.PADDLE_WIDTH, this.PADDLE_HEIGHT);
-                this.ctx.strokeStyle = '#FFFFFF';
-                this.ctx.strokeRect(0, this.playerY, this.PADDLE_WIDTH, this.PADDLE_HEIGHT);
+                this.ctx.shadowColor = '#00ffff';
+                this.ctx.shadowBlur = 10;
+                this.ctx.fillRect(10, this.playerY, this.PADDLE_WIDTH, this.PADDLE_HEIGHT);
                 
-                // Raquete Direita
-                this.ctx.fillStyle = (this.gameMode === 'cpu') ? '#ff00ff' : '#00ff00';
-                this.ctx.fillRect(this.canvas.width - this.PADDLE_WIDTH, this.cpuY, this.PADDLE_WIDTH, this.PADDLE_HEIGHT);
-                this.ctx.strokeStyle = '#FFFFFF';
-                this.ctx.strokeRect(this.canvas.width - this.PADDLE_WIDTH, this.cpuY, this.PADDLE_WIDTH, this.PADDLE_HEIGHT);
-                
-                // BOLA
-                if (this.gameRunning || this.gameOver) {
-                    this.ctx.fillStyle = '#ff8c00';
-                    this.ctx.beginPath();
-                    this.ctx.arc(this.ballX, this.ballY, this.BALL_RADIUS, 0, Math.PI * 2);
-                    this.ctx.fill();
-                }
-                
-                // TEXTOS
-                const centerX = this.canvas.width / 2;
-                const centerY = this.canvas.height / 2;
-                this.ctx.textAlign = 'center';
+                this.ctx.fillStyle = '#ff00ff';
+                this.ctx.shadowColor = '#ff00ff';
+                this.ctx.shadowBlur = 10;
+                this.ctx.fillRect(this.canvas.width - this.PADDLE_WIDTH - 10, this.cpuY, this.PADDLE_WIDTH, this.PADDLE_HEIGHT);
 
+                // Bola
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.shadowColor = '#ffffff';
+                this.ctx.shadowBlur = 15;
+                this.ctx.beginPath();
+                this.ctx.arc(this.ballX, this.ballY, this.BALL_RADIUS, 0, Math.PI * 2);
+                this.ctx.fill();
+                
+                // Reseta sombras
+                this.ctx.shadowBlur = 0;
+
+                // Texto de Pausa ou Fim de Jogo
                 if (this.gameOver) {
-                    this.ctx.fillStyle = '#00ff00';
-                    this.ctx.font = '40px "Press Start 2P"';
-                    this.ctx.fillText(this.winnerText, centerX, centerY);
-                    this.ctx.font = '20px "Press Start 2P"';
-                    this.ctx.fillText('APERTE "NOVO JOGO"', centerX, centerY + 50);
-                } else if (!this.gameRunning) {
-                    this.ctx.fillStyle = '#fff';
-                    this.ctx.font = '24px "Press Start 2P"';
-                    this.ctx.fillText('APERTE INICIAR', centerX, centerY);
+                    this.drawText(this.winnerText, 50, '#ffff00');
                 } else if (this.isPaused) {
-                    this.ctx.fillStyle = '#ffff00';
-                    this.ctx.font = '40px "Press Start 2P"';
-                    this.ctx.fillText('PAUSADO', centerX, centerY);
+                    this.drawText('PAUSADO', 60, '#ffffff');
+                } 
+                // **FIX 2: Feedback visual para o saque**
+                else if (this.gameRunning && this.ballSpeedX === 0 && this.ballSpeedY === 0) {
+                     this.drawText('PREPARAR!', 40, '#00ff00');
                 }
+            }
+            
+            drawText(text, fontSize, color) {
+                this.ctx.fillStyle = color;
+                this.ctx.font = `${fontSize}px 'Press Start 2P'`;
+                this.ctx.textAlign = 'center';
+                this.ctx.textBaseline = 'middle';
+                this.ctx.shadowColor = color;
+                this.ctx.shadowBlur = 10;
+                this.ctx.fillText(text, this.canvas.width / 2, this.canvas.height / 2);
+                this.ctx.shadowBlur = 0;
             }
 
             gameLoop() {
                 this.update();
                 this.draw();
+                // Solicita o próximo frame de animação
                 requestAnimationFrame(() => this.gameLoop());
             }
         }
 
-        window.addEventListener('DOMContentLoaded', () => {
+        // Inicia o jogo quando a janela carregar
+        window.onload = () => {
             new PongGame('gameCanvas');
-        });
+        };
     </script>
 </body>
 </html>
