@@ -65,8 +65,7 @@
 
     <audio id="background-music" src="./music/heaven-garden-pixel-gun-3d-soundtrack-128-ytshorts.savetube.me.mp3" loop></audio>
 
-
-  <script>
+<script>
     class PongGame {
         constructor(canvasId) {
             this.canvas = document.getElementById(canvasId);
@@ -105,7 +104,7 @@
             this.portP2 = null;
             this.readerP2 = null;
             
-            // --- CALIBRAÇÃO SEPARADA (A GRANDE MUDANÇA) ---
+            // --- CALIBRAÇÃO SEPARADA ---
             this.isCalibratingP1 = false; 
             this.potMinP1 = 1023;
             this.potMaxP1 = 0;
@@ -150,8 +149,8 @@
             this.ui.resetBtn.addEventListener('click', () => this.resetGame());
             this.ui.modeCpuBtn.addEventListener('click', () => this.setGameMode('cpu'));
             this.ui.modeP2Btn.addEventListener('click', () => this.setGameMode('player2'));
-            this.canvas.addEventListener('mousemove', (e) => this.handleMouseMovement(e));
             this.ui.muteBtn.addEventListener('click', () => this.toggleMute());
+            // O controle do mouse foi removido
         }
 
         // --- LÓGICA DO JOGO ---
@@ -169,14 +168,6 @@
                 this.ui.cpuScoreLabel.textContent = 'JOGADOR 2';
             }
             this.resetGame(); 
-        }
-
-        handleMouseMovement(event) {
-            if (this.gameMode !== 'player2' || this.portP2) return;
-            const rect = this.canvas.getBoundingClientRect();
-            const scaleY = this.canvas.height / rect.height;
-            const mouseY = (event.clientY - rect.top) * scaleY;
-            this.cpuTargetY = mouseY - this.PADDLE_HEIGHT / 2;
         }
 
         startGame() {
@@ -247,7 +238,7 @@
             this.ui.cpuScoreDisplay.textContent = this.cpuScore;
         }
 
-        // --- LÓGICA DE CONEXÃO (MODIFICADA) ---
+        // --- LÓGICA DE CONEXÃO ---
         
         async toggleArduinoConnection(playerNum) {
             const port = (playerNum === 1) ? this.portP1 : this.portP2;
@@ -261,19 +252,18 @@
                 return;
             }
             try {
-                // Mensagem de "Calibrando" ou "Conectando" (P2 agora também calibra)
                 if (playerNum === 1) this.updateStatus(1, 'Calibrando...', 'status-calibrating');
-                else this.updateStatus(2, 'Calibrando...', 'status-calibrating'); // <-- MUDANÇA
+                else this.updateStatus(2, 'Calibrando...', 'status-calibrating');
                 
                 const port = await navigator.serial.requestPort();
                 await port.open({ baudRate: 9600 });
 
                 if (playerNum === 1) {
                     this.portP1 = port;
-                    this.startCalibrationP1(); // Inicia calibração SÓ para P1
+                    this.startCalibrationP1(); 
                 } else {
                     this.portP2 = port;
-                    this.startCalibrationP2(); // <-- MUDANÇA: Inicia calibração SÓ para P2
+                    this.startCalibrationP2(); 
                 }
                 this.startReading(playerNum); 
             } catch (error) {
@@ -344,13 +334,13 @@
             this.isCalibratingP2 = true;
             this.potMinP2 = 1023; 
             this.potMaxP2 = 0;
-            this.updateStatus(2, 'Calibrando P2... Gire!', 'status-calibrating'); // Mensagem para P2
-            this.cpuY = (this.canvas.height - this.PADDLE_HEIGHT) / 2; // Reseta P2
+            this.updateStatus(2, 'Calibrando P2... Gire!', 'status-calibrating');
+            this.cpuY = (this.canvas.height - this.PADDLE_HEIGHT) / 2;
             this.cpuTargetY = this.cpuY;
 
             setTimeout(() => {
                 this.isCalibratingP2 = false;
-                let range = this.potMaxP2 - this.potMinP2; // Usa valores P2
+                let range = this.potMaxP2 - this.potMinP2;
 
                 if (range < 50) {
                     console.log(`Calibração P2 falhou. Range: ${range}.`);
@@ -365,8 +355,8 @@
                 } else {
                     console.log(`Calibração P2 finalizada. Mín: ${this.potMinP2}, Máx: ${this.potMaxP2}`);
                 }
-                this.updateStatus(2, 'P2: Conectado', 'status-connected'); // Status P2
-                this.ui.connectBtnP2.textContent = 'DESCONECTAR P2'; // Botão P2
+                this.updateStatus(2, 'P2: Conectado', 'status-connected');
+                this.ui.connectBtnP2.textContent = 'DESCONECTAR P2';
             }, 5000); 
         }
 
@@ -402,18 +392,17 @@
             }
         }
 
-        // --- PROCESSAMENTO DE DADOS (MODIFICADO) ---
         processArduinoData(line) {
             if (line.startsWith('P1:')) {
                 const potValue = parseInt(line.substring(3));
                 if (isNaN(potValue)) return;
 
-                if (this.isCalibratingP1) { // Usa flag P1
-                    if (potValue < this.potMinP1) this.potMinP1 = potValue; // Usa valores P1
-                    if (potValue > this.potMaxP1) this.potMaxP1 = potValue; // Usa valores P1
+                if (this.isCalibratingP1) {
+                    if (potValue < this.potMinP1) this.potMinP1 = potValue;
+                    if (potValue > this.potMaxP1) this.potMaxP1 = potValue;
                 } else {
                     const paddleMaxY = this.canvas.height - this.PADDLE_HEIGHT;
-                    this.playerTargetY = this.mapValue(potValue, this.potMinP1, this.potMaxP1, 0, paddleMaxY); // Usa valores P1
+                    this.playerTargetY = this.mapValue(potValue, this.potMinP1, this.potMaxP1, 0, paddleMaxY);
                 }
             }
             
@@ -421,12 +410,12 @@
                 const potValue = parseInt(line.substring(3));
                 if (isNaN(potValue)) return;
                 
-                if (this.isCalibratingP2) { // Usa flag P2
-                    if (potValue < this.potMinP2) this.potMinP2 = potValue; // Usa valores P2
-                    if (potValue > this.potMaxP2) this.potMaxP2 = potValue; // Usa valores P2
+                if (this.isCalibratingP2) {
+                    if (potValue < this.potMinP2) this.potMinP2 = potValue;
+                    if (potValue > this.potMaxP2) this.potMaxP2 = potValue;
                 } else {
                     const paddleMaxY = this.canvas.height - this.PADDLE_HEIGHT;
-                    this.cpuTargetY = this.mapValue(potValue, this.potMinP2, this.potMaxP2, 0, paddleMaxY); // Usa valores P2
+                    this.cpuTargetY = this.mapValue(potValue, this.potMinP2, this.potMaxP2, 0, paddleMaxY);
                 }
             }
             
@@ -436,11 +425,14 @@
             }
         }
 
-        // --- ESTA É A FUNÇÃO QUE TINHA O BUG ---
+        // --- ESTA É A FUNÇÃO CORRIGIDA ---
         mapValue(value, inMin, inMax, outMin, outMax) {
-            const divisor = inMax - inMin; // <-- A CORREÇÃO ESTÁ AQUI
+            const divisor = inMax - inMin; 
             if (divisor === 0) return (outMin + outMax) / 2; 
+
+            // AQUI ESTAVA O BUG. AGORA ESTÁ CORRETO.
             const mappedValue = (value - inMin) * (outMax - outMin) / divisor + outMin;
+            
             return Math.max(outMin, Math.min(mappedValue, outMax));
         }
         
@@ -480,6 +472,7 @@
             if (this.gameMode === 'cpu') {
                 // A CPU só se move se o jogo estiver rodando
             } else { 
+                // P2 (controlado APENAS pelo Arduino 2)
                 distance = this.cpuTargetY - this.cpuY;
                 if (Math.abs(distance) < 1) this.cpuY = this.cpuTargetY;
                 else this.cpuY += distance * this.PADDLE_SMOOTHING;
